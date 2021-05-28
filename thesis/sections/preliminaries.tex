@@ -1,0 +1,89 @@
+\chapter{Preliminaries and Definitions} \label{sec:preliminaries}
+
+\section{Games and algorithms}
+Proofs in this paper will use the cryptographic game-playing framework \cite{EC:BelRog06}. In these games, assignment is denoted by $\leftarrow$, while random sampling is denoted by $\sample$. We write $y \sample \mathsf{A}(x)$ to denote running the probabilistic algorithm $\mathsf{A}$ on input $x$, and assigning the result to $y$. If we wish to specify the random coins $r$ used in a randomized algorithm, we will write $y \leftarrow \mathsf{A}(x;r)$. We will use min-entropy as a measure of the randomness of an algorithm. Define $\eta_\mathsf{A}$ according to
+\shortlongeqn[,]{
+2^{-\eta_\mathsf{A}} = \max\limits_{x,y}\left(\prob{y\leftarrow \mathsf{A}(x;r)}\right)
+}
+where the probability is taken over the choice of coins $r$. The min-entropy of $\mathsf{A}$ is $\eta_\mathsf{A}$. $\bot$ is used to denote a null value. If $G$ is a game, then $\prob{G}$ indicates the probability that $G$ returns true.
+
+We will denote game adversaries by script letters (e.g. $\mathcal{A}$). An adversary $\mathcal{A}$ is simply an algorithm. The notation $\mathcal{A}^{\mathcal{O}}$ indicates that the adversary $\mathcal{A}$ has access to the oracle $\mathcal{O}$ for use as a subroutine. The running time of $\mathcal{A}$ is the worst-case execution time of $\mathcal{A}$ including the time it takes to execute any subroutines.
+
+
+\section{Cryptographic schemes}
+A cryptographic scheme $\mathsf{\Lambda}$ is a set of algorithms $\mathsf{\Lambda.Alg}_1,..., \mathsf{\Lambda.Alg}_u$. We will be using several cryptographic schemes in this paper, including symmetric encryption and public-key encryption. We introduce these here, and other schemes as needed.
+
+A symmetric encryption scheme \textsf{SE} is composed of three algorithms: \textsf{SE.KeyGen}, \textsf{SE.Enc}, and \textsf{SE.Dec}. \textsf{SE.KeyGen} randomly selects a single secret key $k$ of length \textsf{SE.klen} from $\{0,1\}^\mathsf{SE.klen}$. \textsf{SE.Enc} is a randomized algorithm with coins $r\in \{0,1\}^\mathsf{SE.rlen}$ and takes a key and a plaintext $m\in \{0,1\}^\mathsf{SE.mlen}$ and produces a ciphertext $c\in \{0,1\}^\mathsf{SE.clen}$. \textsf{SE.Dec} is a deterministic algorithm, takes a key and a ciphertext, and returns a plaintext or $\bot$, indicating an error.
+
+A public-key (or asymmetric) encryption scheme \textsf{PKE} is similarly composed of three algorithms: \textsf{PKE.KeyGen}, \textsf{PKE.Enc}, and \textsf{PKE.Dec}. \textsf{PKE.KeyGen} randomly generates a secret key $sk$ and a public key $pk$. \textsf{PKE.Enc} is a randomized algorithm with coins $r\in \{0,1\}^\mathsf{PKE.rlen}$ and takes a public key and a plaintext $m\in \{0,1\}^\mathsf{PKE.mlen}$ and produces a ciphertext $c\in \{0,1\}^\mathsf{PKE.clen}$ (note that we will consider only fixed length ciphertexts for public-key schemes). \textsf{PKE.Dec} is a deterministic algorithm, takes a secret key and a ciphertext, and returns a plaintext or $\bot$, indicating an error.
+
+We say that a public-key encryption scheme is $\delta$-correct if, for all $sk,pk$ generated from \textsf{PKE.KeyGen} and $m$,
+\shortlongeqn[,]{
+\prob{\mathsf{PKE.Dec}(sk, \mathsf{PKE.Enc}(pk, m))=m}\ge \delta
+}
+where the probability is taken over the choice of coins $r$ for the encryption function. We could define an analogous property for symmetric encryption, but we will mostly assume that such a $\delta$ value will always be 1 unless otherwise stated.
+
+\section{Pseudo-random functions and random oracles}
+In this paper, we will make use of two standard ways of talking about functions whose output is hard to predict on new inputs. The first is the notion of a pseudo-random function (PRF). Let $\mathsf{F}:K_\mathsf{F}\times \{0,1\}^* \rightarrow W$ be a function, for some output set $W$ and key space $K_\mathsf{F}$. Let the PRF game for \textsf{F} be as defined in \autoref{game:prfgame}. For an adversary $\mathcal{F}$ in the PRF game for \textsf{F}, we define the advantage of $\mathcal{F}$ as
+\shortlongeqn[.]{
+\text{Adv}^\mathrm{PRF}_\mathsf{F}(\mathcal{F})=\left\lvert \prob{\text{PRF}_\mathsf{F}(\mathcal{F})}-\frac{1}{2} \right\rvert
+}
+
+\iffullversion
+Note that we can also write the advantage as follows:
+\begin{align*}
+\text{Adv}^\mathrm{PRF}_\mathsf{F}(\mathcal{F})&=\left\lvert \prob{\text{PRF}_\mathsf{F}(\mathcal{F})}-\frac{1}{2} \right\rvert \\
+&=\left\lvert \prob{\mathcal{F}\Rightarrow 1 \text{ and } b=1} + \prob{\mathcal{F}\Rightarrow 0 \text{ and } b=0} -\frac{1}{2} \right\rvert \\
+&=\left\lvert \frac{1}{2}\condprob{\mathcal{F}\Rightarrow 1}{b=1} + \frac{1}{2}\condprob{\mathcal{F}\Rightarrow 0}{b=0} -\frac{1}{2} \right\rvert \\
+&=\left\lvert \frac{1}{2}\condprob{\mathcal{F}\Rightarrow 1}{b=1} + \frac{1}{2} - \frac{1}{2}\condprob{\mathcal{F}\Rightarrow 1}{b=0} -\frac{1}{2} \right\rvert \\
+&=\frac{1}{2} \left\lvert \condprob{\mathcal{F}\Rightarrow 1}{b=1} - \condprob{\mathcal{F}\Rightarrow 1}{b=0} \right\rvert. \\
+\end{align*}
+We will use the above two forms in a variety of contexts without further explanation.
+\fi
+
+\begin{figure}
+\centering
+\begin{pchstack}
+\myprocedure[linenumbering]{PRF$_{\mathsf{F}}(\mathcal{F})$}{
+	k \sample K_\mathsf{F} \\
+	X \leftarrow \emptyset \\
+	b \sample \{0,1\} \\
+	b' \sample \mathcal{F}^{\mathcal{O}_\mathsf{F}} \\
+	\pcreturn b=b'
+}
+\pchspace
+\myprocedure[linenumbering]{$\mathcal{O}_\mathsf{F}(x)$}{
+	\pcif b=0 \pcthen w \leftarrow \mathsf{F}(k,x) \\
+	\pcif b=1 \pcthen \\
+	\pcind \pcif x \notin X \pcthen \\
+	\pcind \pcind w_x\sample W \\
+	\pcind \pcind X \leftarrow X\cup \{x\} \\
+	\pcind \pcreturn w_x
+}
+\end{pchstack}
+\caption{The PRF security game.}
+\label{game:prfgame}
+\end{figure}
+
+The second way to talk about functions with unpredictable output is by using the random oracle model. This model is useful for situations in which there is no secret input to the function \textsf{F}, so the game in \autoref{game:prfgame} is no longer relevant. In this model, we replace \textsf{F} by a lazily-sampled random function, and provide oracle access to this function to all game adversaries. A lazily-sampled random function will return random outputs on previously-unseen queries, and outputs consistent with previous outputs for any previously-seen queries. (In the case of $b=1$ in the PRF game, the oracle $\mathcal{O}_\mathsf{F}$ behaves as a lazily-sampled random function.)
+
+\section{Algorithm substitution attacks}
+
+The main focus of this paper is on different kinds of Algorithm Substitution Attacks (ASAs), and so we define this notion here. Let $\mathsf{\Lambda}$ be a cryptographic scheme composed of algorithms $\mathsf{\Lambda.Alg}_1,..., \mathsf{\Lambda.Alg}_u$. An ASA on $\mathsf{\Lambda}$, denoted \textsf{Sub} (for subversion), specifies the following:
+\begin{itemize}
+\item a subversion-key generation function \textsf{Sub.KeyGen},
+\item an index $\lambda$ for the component algorithm of $\mathsf{\Lambda}$ to be subverted, and
+\item a subverted algorithm $\mathsf{Sub.Alg}_\lambda$ to replace the chosen algorithm $\mathsf{\Lambda.Alg}_\lambda$.
+\end{itemize}
+
+The key generation algorithm \textsf{Sub.KeyGen} takes no arguments and returns a pair of keys $ek$ and $xk$ (for embedded key and extraction key). The subverted algorithm $\mathsf{Sub.Alg}_\lambda$ has the same inputs as $\mathsf{\Lambda.Alg}_\lambda$, represented by a tuple $x$, plus an embedded key $ek$, and a state variable $\tau$ (potentially $\bot$, for stateless ASAs); $\mathsf{Sub.Alg}_\lambda$ has the same outputs as $\mathsf{\Lambda.Alg}_\lambda$ plus the updated state variable $\tau'$. For example, if $\mathsf{\Lambda}$ is a symmetric encryption scheme \textsf{SE} and $\mathsf{\Lambda.Alg}_\lambda$ is \textsf{SE.Enc}, then we have $c, \tau' \sample \mathsf{Sub.Enc}(k, m, ek, \tau)$.\footnote{For clarity we make a slight abuse of notation here, writing $\mathsf{Sub.Enc}(k, m, ek, \tau)$ instead of $\mathsf{Sub.Enc}(x, ek, \tau)$ for $x=(k, m)$.}
+
+The idea here is that the algorithm $\mathsf{Sub.Alg}_\lambda$ is chosen by an adversary $\mathcal{A}$ who is trying to subvert the security of scheme $\mathsf{\Lambda}$. A user $\mathcal{U}$ of $\mathsf{\Lambda}$ will unknowingly use $\mathsf{Sub.Alg}_\lambda$, which has the key $ek$ embedded, in place of $\mathsf{\Lambda.Alg}_\lambda$. The adversary $\mathcal{A}$ will observe $\mathcal{U}$'s communication with other users of the scheme $\mathsf{\Lambda}$, and violate the security of $\mathsf{\Lambda}$ by making use of the extraction key $xk$. Depending on the instantiation, $\mathcal{A}$'s specific attack goal can vary, although a common one is recovery of whatever secret key is used by $\mathcal{U}$ for $\mathsf{Sub.Alg}_\lambda$.
+
+Note that we consider here only the subversion of a single algorithm of the scheme $\Lambda$. Other works have considered the case of total subversion (any or all of the algorithms are substituted), mostly in the context of countermeasures \cite{ACNS:AFMV19,CCS:RTYZ17,AC:RTYZ16}.
+
+The two keys used by $\mathcal{A}$ can be the same, $xk=ek$. In this case, we may denote them simply by $\overline{k}$, and we refer to this type of ASA as a symmetric ASA. In other cases, $(xk,ek)$ will be a private key-public key pair, reflecting the fact that embedding the key $ek$ into an $\mathsf{Sub.Alg}_\lambda$ may lead to its recovery by some other party. We call such an ASA an asymmetric ASA. Note that an \emph{asymmetric ASA} can be used to attack a \emph{symmetric-key primitive} $\mathsf{\Lambda}$ (e.g., symmetric encryption), and vice versa. We will discuss the advantages and disadvantages of an asymmetric ASA in \autoref{sec:asymASA}.
+
+The attacker $\mathcal{A}$ wants to complete their attack in a way that is not detectable by $\mathcal{U}$. In order to measure detectability, we allow $\mathcal{U}$ blackbox access to the algorithm $\mathsf{Sub.Alg}_\lambda$ (with the embedded key and state implicitly provided), and calculate how well $\mathcal{U}$ can differentiate $\mathsf{Sub.Alg}_\lambda$ from $\mathsf{\Lambda.Alg}_\lambda$. Formalization of the notion of detectability will be covered in the next section.
+
+There are a few different ways that previous works have considered the subverter's influence on $\mathcal{U}$ after the relevant algorithm has been substituted. Bellare, Paterson, and Rogaway \cite{C:BelPatRog14} implicitly considered the attacker passive (after the substitution), only observing ciphertexts of messages that the user decided to encrypt. Degabriele, Farshim, and Poettering \cite{FSE:DegFarPoe15} presented an ``input-triggered'' subversion, which relied on the subverter's ability to influence the user to encrypt some particular value, making the subverter active. Bellare, Jaeger, and Kane \cite{CCS:BelJaeKan15}, addressed this issue by requiring key recovery to occur for messages sampled from any distribution $\mathcal{M}$, ruling out the attack from \cite{FSE:DegFarPoe15} and again making the subverter passive. We follow \cite{CCS:BelJaeKan15} and consider a passive subverter who should be able to complete their attack no matter how inputs are chosen for $\mathsf{Sub.Alg}_\lambda$.

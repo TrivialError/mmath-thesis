@@ -1,0 +1,390 @@
+\chapter{Generalized Modifications to Obtain Asymmetric ASAs} \label{sec:generalize}
+In this section, we will explore how the techniques of Sections 4 and 5 generalize. So far, we have only considered asymmetric ASAs on symmetric encryption. Our asymmetric ASAs could be seen as modifications of existing symmetric ASAs. In this section, we will show that these modifications could be done in a much more general manner, without specifying either the cryptographic primitive or the underlying symmetric ASA.
+
+\paragraph{Flexible ASAs.} This generalization will apply only to a subclass of symmetric ASAs. A reader might have noticed that the techniques of \cite{C:BelPatRog14} and \cite{CCS:BelJaeKan15} could be used to leak any value, and not just the key $k$. Indeed, it is this property of a symmetric ASA that will allow for a transformation into an asymmetric one.
+
+A flexible ASA $\mathsf{fSub}$ of a cryptographic scheme $\mathsf{\Lambda}$ is an ASA that satisfies these additional constraints:
+\begin{itemize}\itemsep0em
+\item $\mathsf{fSub.Alg}_\lambda$ takes an additional parameter $\mu\in M$. We call $M$ the space of leakable values. We will assume that $M$ consists of all bit strings.
+\item The subverter $\mathcal{A}$ must be able to recover $\mu$ from observation of outputs of $\mathsf{fSub.Alg}_\lambda(\cdot,\allowbreak{}ek,\tau,\mu)$ (analogous to the requirement of key recovery). This must be possible efficiently, as a function of the length of $\mu$
+\end{itemize}
+
+We define the regular and augmented state reset detectability games $\mathrm{SRDET}_\mathsf{fSub}(\mathcal{U})$ and $\mathrm{ASRDET}_\mathsf{fSub}(\mathcal{U})$ for a flexible ASA $\mathsf{fSub}$ in \autoref{game:flexdetect}. These are modifications to the games in \autoref{game:gendetect} to include $\mu$. The adversary $\mathcal{U}$ supplies the value for $\mu$ when invoking its oracle, allowing the leaked value to be related or unrelated to any secret information intended to be used in the cryptographic scheme.
+
+\begin{figure}
+\centering
+\begin{pchstack}
+\begin{pcvstack}
+\myprocedure[linenumbering]{$\pcbox{\!\!\text{A}\!\!}$SRDET$_{\mathsf{fSub}}(\mathcal{U})$}{
+	(xk,ek) \sample \mathsf{fSub.KeyGen()} \\
+	i \leftarrow 1 \\
+	\tau_0 \leftarrow \bot \\
+	b \sample \{0,1\} \\
+	b' \sample \mathcal{U}^{\mathcal{O}_{\mathsf{Alg}_\lambda},\mathsf{Reset}}\pcbox{\!(ek)\!} \\
+	\pcreturn b=b'
+}
+\pcvspace
+\myprocedure[linenumbering]{\textsf{Reset}($j$), \hfill $0\le j<i$}{
+	\pcif b = 1 \pcthen \\
+	\pcind \tau_{i} \leftarrow \tau_{j} \\
+	\pcind i \leftarrow i + 1
+}
+\pcvspace
+\myprocedure[linenumbering]{$\mathcal{O}_{\mathsf{Alg}_\lambda}(x,\mu)$}{
+	\pcif b=0 \pcthen \\
+	\pcind y \sample \mathsf{\Lambda.Alg}_\lambda(x) \\
+	\pcif b=1 \pcthen \\
+	\pcind (y, \tau_i) \sample \mathsf{fSub.Alg}_\lambda(x, ek, \tau_{i-1}, \mu) \\
+	\pcind i \leftarrow i + 1 \\
+	\pcreturn y
+}
+\end{pcvstack}
+\pchspace
+\unskip\ \vrule\
+\begin{pcvstack}
+\myprocedure[linenumbering]{ASRDET\$$_{\mathsf{fSub}}(\mathcal{U})$}{
+	(xk,ek) \sample \mathsf{fSub.KeyGen()}\\
+	i \leftarrow 1 \\
+	\tau_0 \leftarrow \bot \\
+	b \sample \{0,1\} \\
+	b' \sample \mathcal{U}^{\mathcal{O}_{\mathsf{Alg}_\lambda},\mathsf{Reset}}(ek) \\
+	\pcreturn b=b'
+}
+\pcvspace
+\myprocedure[linenumbering]{\textsf{Reset}($j$), \hfill $0\le j<i$}{
+	\pcif b = 1 \pcthen \\
+	\pcind \tau_{i} \leftarrow \tau_{j} \\
+	\pcind i \leftarrow i + 1
+}
+\pcvspace
+\myprocedure[linenumbering]{$\mathcal{O}_{\mathsf{Alg}_\lambda}(x,\mu)$}{
+	\pcif b=0 \pcthen \\
+	\pcind y \sample \mathsf{\Lambda.Alg}_\lambda(x) \\
+	\pcif b=1 \pcthen \\
+	\pcind \mu \sample \{0,1\} \\
+	\pcind (y, \tau_i) \sample \mathsf{fSub.Alg}_\lambda(x, ek, \tau_{i-1}, \mu) \\
+	\pcind i \leftarrow i + 1 \\
+	\pcreturn y
+}
+\end{pcvstack}
+\end{pchstack}
+\caption[The regular and augmented state reset detection games for flexible ASAs and the game ASRDET\$]{The regular and augmented state reset detection games for flexible ASAs is on the left, and the game ASRDET\$ is on the right. The augmented game includes the code in the box, while the regular one does not. The ASRDET\$ game is a modification that generates a random $\mu$ on each invocation of $\mathcal{O}_{\mathsf{Alg}_\lambda}$ instead of using the supplied value.}
+\label{game:flexdetect}
+\end{figure}
+
+We also define a game ASRDET\$, shown in \autoref{game:flexdetect}, which we will use in \autoref{theorem:gen1}. This game generates a random bit $\mu$ instead of using the value given to the oracle.
+
+For our general treatment in this section, we will work with abstract security games. Let $\mathsf{\Lambda}$ be a cryptographic scheme. Let SEC be a cryptographic game with adversary $\mathcal{A}$, which interacts with $\mathcal{A}$ by providing some oracles to $\mathcal{A}$ based on the algorithms of $\mathsf{\Lambda}$, and specifies a value $\phi \in [0,1]$. The advantage of $\mathcal{A}$ at the game SEC is defined as
+\shortlongeqn[.]{
+\mathrm{Adv}^\mathrm{SEC}_\Lambda(\mathcal{A}) = |\prob{\mathrm{SEC}(\mathcal{A})}-\phi|
+}
+This generalization encompasses the security notion of IND-CPA for symmetric encryption used in \autoref{sec:asymASA2}, as well as security notions such as unforgeability on signature schemes and MAC tags, and others.
+
+As in \autoref{sec:asymASA2} with the IND-CPA game, we require a modification to the SEC game when talking about subversions. Let SEC be a security game on a cryptographic primitive $\mathsf{\Lambda}$. Let $\mathsf{fSub}$ be an ASA on $\mathsf{\Lambda}$. We will assume without loss of generality that all invocations of the algorithm $\mathsf{\Lambda.Alg}_\lambda$ occur within oracles provided to the adversary $\mathcal{A}$. Define $\mathrm{SEC'}$ on $\mathsf{fSub}$ to be the same as $\mathrm{SEC}$ but with the following modifications:
+\begin{itemize}\itemsep0em
+\item A state $\tau$ (initialized to $\bot$) and embedded key $ek$ (generated with $\mathsf{fSub.KeyGen}$) are assigned at the beginning of the game, and $ek$ is provided to the adversary $\mathcal{A}$ (i.e. $\mathcal{A}$ is invoked with $ek$ as a parameter and its output is ignored).
+\item For any oracle $\mathcal{O}$ provided to the adversary $\mathcal{A}$ which invokes $\mathsf{\Lambda.Alg}_\lambda$, $\mathcal{O}$ is modified to take $\mu$ as an additional parameter. Call these oracles $\mu$-oracles.
+\item Every instance of $\mathsf{\Lambda.Alg}_\lambda$ is replaced by $\mathsf{fSub.Alg}_\lambda$, with the state variable $\tau$ being assigned on output, where the input to $\mathsf{\Lambda.Alg}_\lambda$ is given as the first argument to $\mathsf{fSub.Alg}_\lambda$, and the required $ek$, $\mu$, and $\tau$ are provided as inputs.
+\end{itemize}
+Essentially, we are modifying every instance of the line 
+\shortlongeqn[]{
+y \sample \mathsf{\Lambda.Alg}_\lambda(x)
+}
+to be of the form
+\shortlongeqn[.]{
+(y, \tau) \sample \mathsf{fSub.Alg}_\lambda(x, ek, \tau, \mu)
+}
+This SEC$'$ game will be used in \autoref{theorem:gen2}.
+
+We will also define another game as a further modification to SEC$'$. Let $S$ be the tuple of all variables assigned during the game SEC$'$, before the the first instance where a $\mu$-oracle is provided to $\mathcal{A}$. Let $S'=S\setminus \{\tau,ek\}$. Let $g$ be a function whose domain is the set of all possible tuples $S'$, and whose output is a bit string. We say a function $g$ of this form is a \emph{selection function} for the game SEC$'$. We define the game SEC$^g_\mathsf{fSub}(\mathcal{A})$ is the same as SEC$'_\mathsf{fSub}(\mathcal{A})$ but where the $\mu$-oracles no longer accept $\mu$ as a parameter, and instead, each oracle has the line $\mu \leftarrow g(S')$ at the start of its execution. We will still refer to these oracles as the $\mu$-oracles.
+
+SEC$^g_\mathsf{fSub}$ is an appropriate game with which to evaluate the security of $\mathsf{fSub}$. The selection function $g$ represents what value is targeted as being leaked by the ASA, and the adversary $\mathsf{A}$ is tasked with breaking the security of $\mathsf{fSub}$ when this value is being leaked. For a secure flexible ASA, we require that $\mathrm{Adv}^{\mathrm{SEC}^g}_\mathsf{fSub}$ is small for all selection functions $g$.
+
+\section{ASA modifications}
+We now define our two modifications to flexible symmetric ASAs which result in flexible asymmetric ASAs, one of type 1 and the other of type 2. Let $\mathsf{\Lambda}$ be a cryptographic scheme. Let $\mathsf{fSub}$ be a flexible symmetric ASA on $\mathsf{\Lambda}$, subverting the function $\mathsf{\Lambda.Alg}_\lambda$. Let $\mathsf{PKE}$ be a public-key encryption scheme. Define $\Gamma_1(\mathsf{fSub})$ and $\Gamma_2(\mathsf{fSub})$ as the flexible asymmetric ASAs on $\mathsf{\Lambda}$ with $\Gamma_1(\mathsf{fSub}).\mathsf{Alg}_\lambda$ and $\Gamma_2(\mathsf{fSub}).\mathsf{Alg}_\lambda$ defined in \autoref{figure:gammas}. The subversion-key generation algorithms for both subversions are the same: the extraction key is the private key generated by $\mathsf{PKE.KeyGen}$ and the embedded key is the concatenation of the public key generated by $\mathsf{PKE.KeyGen}$ and the key generated by $\mathsf{fSub.KeyGen}$.
+
+\begin{figure}
+\centering
+\begin{pchstack}
+\myprocedure[linenumbering]{$\Gamma_1(\mathsf{fSub}).\mathsf{Alg}_\lambda(x, ek, \tau, \mu)$}{
+	(ek', \overline{k}) \leftarrow ek \\
+	\pcif \tau = \bot \pcthen \\
+	\pcind \mu' \sample \textsf{PKE.Enc}(ek', \mu) \\
+	\pcind \sigma \leftarrow 0 \\
+	\pcind \tau' \leftarrow \bot \\
+	\pcelse \\
+	\pcind ((\sigma, \mu), \tau') \leftarrow \tau \\
+	\pcif \sigma = \mathsf{PKE.clen} \pcthen \\
+	\pcind \sigma \leftarrow 1 \\ 
+	\pcind \mu' \sample \mathsf{PKE.Enc}(ek', \mu) \\
+	\pcelse \\
+	\pcind \sigma \leftarrow \sigma + 1 \\
+	(y,\tau') \sample \mathsf{fSub}.\mathsf{Alg}_\lambda(x, \overline{k}, \tau', \mu'[\sigma]) \\
+	\pcreturn (y, ((\sigma,\mu'), \tau'))
+}
+\pchspace
+\myprocedure[linenumbering]{$\Gamma_2(\mathsf{fSub}).\mathsf{Alg}_\lambda(x, ek, \tau, \mu)$}{
+	(ek', \overline{k}) \leftarrow ek \\
+	\pcif \tau = \bot \pcthen \\
+	\pcind \mu' \sample \textsf{PKE.Enc}(ek', \mu) \\
+	\pcind \tau' \leftarrow \bot \\
+	\pcelse \\
+	\pcind (\mu', \tau') \leftarrow \tau \\
+	(y,\tau') \sample \mathsf{fSub}.\mathsf{Alg}_\lambda(x, \overline{k}, \tau', \mu') \\
+	\pcreturn (y, (\mu', \tau'))
+}
+\end{pchstack}
+\caption[Definitions of transformation $\Gamma_1$ and $\Gamma_2$ on flexible symmetric ASAs to obtain flexible asymmetric ASAs]{Definitions of transformation $\Gamma_1$ and $\Gamma_2$ on flexible symmetric ASAs to obtain flexible asymmetric ASAs.}
+\label{figure:gammas}
+\end{figure}
+
+These two modifications are exactly the techniques we used in \autoref{sec:asymASA} and \autoref{sec:asymASA2} respectively, to build asymmetric ASAs on symmetric encryption, just written for a generic scheme.
+
+\paragraph{Recovery of $\mu$.} We will be treating the analysis of recovery of $\mu$ for $\Gamma_1$ and $\Gamma_2$ relatively informally. If $\mathsf{fSub}$ is a flexible symmetric ASA, then a subverter $\mathcal{A}$ in possession of the key $\overline{k}$, upon observing outputs of the function $\mathsf{fSub.Alg}_\lambda(\cdot,\overline{k},\tau,\mu)$, will be able to recover $\mu$. Then $\Gamma_2(\mathsf{fSub})\mathsf{.Alg}_\lambda$ enables the same for an adversary in possession of the extraction key $xk$: the value that $\mathsf{fSub}$ is asked to leak will always be a chosen encryption $\mu'$ of $\mu$ under $\mathsf{PKE}$, and since $\mathsf{fSub}$ enables recovery of $\mu'$ in this context, $\mathcal{A}$ can recover $\mu$ using $xk$.
+
+The case of $\Gamma_1$ is a little bit more complicated. In this case, $\mu$ is encrypted to $\mu'$, each of whose bits is used exactly once before a new encryption is computed. Each bit is leaked using $\mathsf{fSub}$. In order to conclude that $\mathcal{A}$ is able to recover $\mu'$, we require that $\mathsf{fSub}$ is capable of leaking single bits with high probability after the observation of only one output. Otherwise, a full value of $\mu'$ would not be able to be recovered.
+
+\paragraph{Proving $\Gamma_1(\mathsf{fSub})$ is a type 1 asymmetric ASA.}
+We can now prove the main results of this section. The first deals with the augmented undetectability of $\Gamma_1(\mathsf{fSub})$, showing that it is a type 1 asymmetric ASA.
+
+\begin{theorem} \label{theorem:gen1}
+Let $\mathsf{\Lambda}$ be a cryptographic scheme. Let $\mathsf{fSub}$ be a flexible symmetric $\mathrm{ASA}$ on $\mathsf{\Lambda}$. Let $\mathcal{U}_1$ be an adversary for the $\mathrm{ASRDET}$ game of \autoref{game:flexdetect} on $\Gamma_1(\mathsf{fSub})$. Then there is an adversary $\mathcal{D}_1$ such that
+\shortlongeqn[.]{
+\mathrm{Adv}^\mathrm{ASRDET}_{\Gamma_1(\mathsf{fSub})}(\mathcal{U}_1) \le \mathrm{Adv}^{\mathrm{ASRDET}\$}_{\mathsf{fSub}}(\mathcal{U}_1) + 2\mathrm{Adv}^{\mathrm{IND}\$}_\mathsf{PKE}(\mathcal{D}_1)
+}
+The running time of $\mathcal{D}_1$ is about that of $\mathcal{U}_1$ plus the running time of $\mathsf{PKE.KeyGen}$ and $\mathsf{fSub.KeyGen}$, and $\mathcal{D}_1$ makes the same number of queries to its own oracle as $\mathcal{U}_1$.
+\end{theorem}
+
+\begin{proof}
+We will proceed by a sequence of games. This sequence will be similar to the first part of the proof of \autoref{theorem:detect}. Let $L_0$ be the augmented state reset detectability game $\mathrm{ASRDET}_{\Gamma_1(\mathsf{fSub})}(\mathcal{U}_1)$. Let $L_1$ be the same as $L_0$ but with $\mu'$ sampled randomly instead of computed as an encryption of $\mu$. Let $L_2$ be the augmented state reset detectability game $\mathrm{ASRDET}\$_{\mathsf{fSub}}$.
+
+Let $\mathcal{D}_1$ be an adversary to the IND\$ game for $\mathsf{PKE}$ that simulates games $L_0$ and $L_1$ for $\mathcal{U}_1$ by using its own $\mathcal{O}_\mathsf{PKE.Enc}$ oracle in place of $\mathsf{PKE.Enc}$, given in \autoref{game:D1}.
+
+\begin{figure}
+\centering
+\begin{pchstack}
+\begin{pcvstack}
+\myprocedure[linenumbering]{$\mathcal{D}_1^{\mathcal{O}_\mathsf{PKE.Enc}}(pk)$}{
+	(xk,(ek',\overline{k})) \sample \Gamma_1(\mathsf{fSub}).\mathsf{KeyGen()} \\
+	ek \leftarrow (pk, \overline{k}) \\
+	i \leftarrow 1 \\
+	\tau_0 \leftarrow \bot \\
+	b_\text{det} \sample \{0,1\} \\
+	b_\text{det}' \sample \mathcal{U}_1^{\mathcal{O}_{\mathsf{Alg}_\lambda},\mathsf{Reset}}(ek) \\
+	\pcif b_\text{det}=b_\text{det}' \\
+	\pcind \pcreturn 1 \\
+	\pcelse \\
+	\pcind \pcreturn 0
+}
+\pcvspace
+\myprocedure[linenumbering]{$\mathsf{Reset}(j)$, \hfill $0\le j<i$}{
+	\pcif b_\text{det} = 1 \pcthen \\
+	\pcind \tau_{i} \leftarrow \tau_{j} \\
+	\pcind i \leftarrow i + 1
+}
+\end{pcvstack}
+\pchspace
+\begin{pcvstack}
+\myprocedure[linenumbering]{$\mathcal{O}_{\mathsf{Alg}_\lambda}(x,\mu)$}{
+	\pcif b_\text{det}=0 \pcthen \\
+	\pcind y \sample \mathsf{\Lambda.Alg}_\lambda(x) \\
+	\pcif b_\text{det}=1 \pcthen \\
+	\pcind (y, \tau_i) \sample \mathsf{Helper}(x,ek,\tau_{i-1},\mu) \\
+	\pcind i \leftarrow i + 1 \\
+	\pcreturn y
+}
+\pcvspace
+\myprocedure[linenumbering]{$\mathsf{Helper}(x,ek,\tau,\mu)$}{
+	(pk, \overline{k}) \leftarrow ek \\
+	\pcif \tau = \bot \pcthen \\
+	\pcind \pcbox{\mu' \sample \mathcal{O}_\mathsf{PKE.Enc}(\mu)} \\
+	\pcind \sigma \leftarrow 0 \\
+	\pcind \tau' \leftarrow \bot \\
+	\pcelse ((\sigma, \mu), \tau') \leftarrow \tau \\
+	\pcif \sigma = \mathsf{PKE.clen} \pcthen \\
+	\pcind \sigma \leftarrow 1 \\ 
+	\pcind \pcbox{\mu' \sample \mathcal{O}_\mathsf{PKE.Enc}(\mu)} \\
+	\pcelse \sigma \leftarrow \sigma + 1 \\
+	(y,\tau') \sample \mathsf{fSub}.\mathsf{Alg}_\lambda(x, \overline{k}, \tau', \mu') \\
+	\pcreturn (y, ((\sigma,\mu'), \tau'))
+}
+\end{pcvstack}
+\end{pchstack}
+\caption[Adversary $\mathcal{D}_1$ for the proof of \autoref{theorem:gen1}]{Adversary $\mathcal{D}_1$ for the proof of \autoref{theorem:gen1}.}
+\label{game:D1}
+\end{figure}
+
+Let $b_\$$ denote the bit from the IND\$$_\mathsf{PKE}(\mathcal{D}_1)$ game. Note that if $b_\$=1$, then the oracle simulated by $\mathcal{D}_1$ proceeds exactly as in game $L_1$, and if  $b_\$=0$, then it proceeds exactly as in game $L_0$. Thus we have
+\shortlongeqn[,]{
+\condprob{\mathcal{D}_1 \Rightarrow 1}{b_\$ = 1} = \prob{L_1}
+}
+\shortlongeqn[,]{
+\condprob{\mathcal{D}_1 \Rightarrow 1}{b_\$ = 0} = \prob{L_0}
+}
+and hence
+\shortlongeqn[.]{
+|\prob{L_1}-\prob{L_0}| = 2\text{Adv}^{\text{IND\$}}_\mathsf{PKE}(\mathcal{D}_1)
+}
+
+From here, we note that, as in the proof of \autoref{theorem:detect}, the first lines (lines 1--10 in adversary $\mathcal{D}_1$'s $\mathsf{Helper}$) of the implementation of $\Gamma_1(\mathsf{fSub}).\mathsf{Alg}_\lambda$ in game $L_1$ act as bookkeeping in order to use exactly one new random bit $\mu$ at a time in $\mathsf{fSub}.\mathsf{Alg}_\lambda$. Substituting these lines for $\mu' \sample \{0,1\}$ and moving this line to the first line of the oracle call gives us precisely the game $L_2=\mathrm{ASRDET}\$_{\mathsf{fSub}}(\mathcal{U}_1) $, and $\prob{L_1}=\prob{L_2}$.
+
+Taken together we get
+\iffullversion
+\begin{align*}
+\mathrm{Adv}^\mathrm{ASRDET}_{\Gamma_1(\mathsf{fSub})}(\mathcal{U}_1)
+&= |\prob{L_0}-\frac{1}{2} \\
+&= |\prob{L_0}-\prob{L_1}+\prob{L_1}-\frac{1}{2}| \\
+&\le |\prob{L_0}-\prob{L_1}|+|\prob{L_2}-\frac{1}{2}| \\
+&= \mathrm{Adv}^{\mathrm{ASRDET}\$}_{\mathsf{fSub}}(\mathcal{U}_1) + 2\mathrm{Adv}^{\mathrm{IND}\$}_\mathsf{PKE}(\mathcal{D}_1),
+\end{align*}
+\else
+\[
+\mathrm{Adv}^\mathrm{ASRDET}_{\Gamma_1(\mathsf{fSub})}(\mathcal{U}_1) \le \mathrm{Adv}^{\mathrm{ASRDET}\$}_{\mathsf{fSub}}(\mathcal{U}_1) + 2\mathrm{Adv}^{\mathrm{IND}\$}_\mathsf{PKE}(\mathcal{D}_1),
+\]
+\fi
+as desired.
+\end{proof}
+
+
+\paragraph{Proving $\Gamma_2(\mathsf{fSub})$ is a type 2 asymmetric ASA.} Next we deal with both the regular undetectability and the security of $\Gamma_2(\mathsf{fSub})$, proving that $\Gamma_2(\mathsf{fSub})$ is a type 2 asymmetric ASA. The security of $\Gamma_2(\mathsf{fSub})$ is evaluated using the game SEC$^g_{\Gamma_2(\mathsf{fSub})}$, and an adversary's advantage at this game is bounded by using the game SEC$'_\mathsf{fSub}$. In this sense, we are relating the security of $\Gamma_2(\mathsf{fSub})$ to the security of $\mathsf{fSub}$ in the situation where the adversary must provide the value of $\mu$, the ``value to be leaked'' by $\mathsf{fSub}$. If an adversary must provide the value to be leaked, then we would expect that there is nothing more to be learned for the adversary, unless the scheme is leaking information in other ways. Thus, intuitively, what we require is that $\mathsf{fSub}$ is not leaking any additional information; this is codified in the game SEC$'_\mathsf{fSub}$. This provides the intuition for our security result, and the formalization of what is required from $\mathsf{fSub}$ to ensure that $\Gamma_2(\mathsf{fSub})$ is secure.
+
+\begin{theorem} \label{theorem:gen2}
+Let $\mathsf{\Lambda}$ be a cryptographic scheme. Let $\mathsf{fSub}$ be a flexible symmetric $\mathrm{ASA}$ on $\mathsf{\Lambda}$. Let $\mathrm{SEC}$ be a security game on $\mathsf{\Lambda}$. Let $g$ be a selection function for the game $\mathrm{SEC}'$. Let $\mathcal{U}_1$ be an adversary for the $\mathrm{SRDET}$ game on $\Gamma_2(\mathsf{fSub})$ and $\mathcal{V}_1$ be an adversary for the $\mathrm{SEC}^g$ game on $\Gamma_2(\mathsf{fSub})$. Then there is an adversary $\mathcal{U}_2$ such that
+\shortlongeqn[,]{
+\mathrm{Adv}^\mathrm{SRDET}_{\Gamma_2(\mathsf{fSub})}(\mathcal{U}_1) = \mathrm{Adv}^{\mathrm{SRDET}}_{\mathsf{fSub}}(\mathcal{U}_2)
+}
+and adversaries $\mathcal{D}_2$ and $\mathcal{V}_2$ such that
+\shortlongeqn[.]{
+\mathrm{Adv}^{\mathrm{SEC}^g}_{\Gamma_2(\mathsf{fSub})}(\mathcal{V}_1) \le \mathrm{Adv}^{\mathrm{SEC'}}_{\mathsf{fSub}}(\mathcal{V}_2) + 2\mathrm{Adv}^{\mathrm{IND}\text{-}\mathrm{CPA}}_\mathsf{PKE}(\mathcal{D}_2)
+}
+The running time of $\mathcal{U}_2$ is about that of $\mathcal{U}_1$ and $\mathcal{U}_2$ makes the same number of queries to its own oracle as $\mathcal{U}_1$. The running time of $\mathcal{D}_2$ is about that of $\mathcal{V}_1$, and $\mathcal{D}_2$ makes the same number of queries to its own oracle as $\mathcal{V}_1$. If the number of oracle queries that $\mathcal{V}_1$ makes is $n$, then the running time of $\mathcal{V}_2$ is about that of $\mathcal{V}_1$, plus the running time of $\mathsf{PKE.KeyGen}$, plus the running time of $\mathsf{PKE.Enc}$ times $n$. For each oracle in the game $\mathrm{SEC}$, $\mathcal{V}_2$ makes the same number of queries to its corresponding oracle as $\mathcal{V}_1$ does.
+\end{theorem}
+
+\begin{proof}
+\textit{For the undetectability result}, we will construct the adversary $\mathcal{U}_2$ directly; the construction is given in \autoref{game:UDV2}. We claim that $\mathcal{U}_2$ exactly simulates the game $\mathrm{SRDET}_{\Gamma_2(\mathsf{fSub})}$ for $\mathcal{U}_1$.
+
+To see this, observe that for any query to $\mathcal{O}_{\Gamma_2(\mathsf{fSub}).\mathsf{Alg}_\lambda}$ that $\mathcal{U}_1$ makes, the value of $\mu'$ passed to $\mathcal{O}_{\mathsf{fSub.Alg}_\lambda}$ is an encryption of $\mu$ under $\mathsf{PKE}$. Furthermore, the same encrypted $\mu'$ is reused in all invocations of $\mathsf{fSub.Alg}_\lambda$ unless $\tau_{i-1}=\bot$, in which case it is recomputed. This is exactly the behaviour of the $\mathrm{SRDET}_{\Gamma_2(\mathsf{fSub})}$ game. Hence $\prob{\mathrm{SRDET}_{\Gamma_2(\mathsf{fSub})}(\mathcal{U}_1)}=\prob{\mathrm{SRDET}_{\mathsf{fSub}}(\mathcal{U}_2)}$, giving our result.
+
+\textit{For the security inequality}, we will proceed by a sequence of games. Let $K_0$ be the game $\mathrm{SEC}^g_{\Gamma_2(\mathsf{fSub})}(\mathcal{V}_1)$. Let $K_1$ be the game $\mathrm{SEC}^0_{\Gamma_2(\mathsf{fSub})}(\mathcal{V}_1)$, where the 0 in the superscript represents the function that outputs 0 on all inputs. Let $K_2$ be the game $\mathrm{SEC'}_{\mathsf{fSub}}(\mathcal{V}_2)$.
+
+Let $\mathcal{D}_2$ be an adversary to the IND-CPA game for $\mathsf{PKE}$ that simulates games $K_0$ and $K_1$ for $\mathcal{V}_1$ by using its own $\mathcal{O}_\mathsf{PKE.Enc}$ oracle in place of $\mathsf{PKE.Enc}$. This is shown in \autoref{game:UDV2}.
+
+\begin{figure}[t]
+\centering
+\begin{pchstack}
+\begin{pcvstack}
+\myprocedure[linenumbering]{$\mathcal{U}_2^{\mathcal{O}_{\mathsf{fSub.Alg}_\lambda},\mathsf{Reset}_2}$}{
+	(xk,ek') \sample \mathsf{PKE}.\mathsf{KeyGen()} \\
+	i \leftarrow 1 \\
+	\tau_0 \leftarrow \bot \\
+	b \sample \mathcal{U}_1^{\mathcal{O}_{\Gamma_2(\mathsf{fSub}).\mathsf{Alg}_\lambda},\mathsf{Reset}_1} \\
+	\pcreturn b
+}
+\pcvspace
+\myprocedure[linenumbering]{$\mathsf{Reset}_1(j)$, \hfill $0\le j<i$}{
+	\tau_{i} \leftarrow \tau_{j} \\
+	i \leftarrow i + 1 \\
+	\mathsf{Reset}_2(j)
+}
+\pcvspace
+\myprocedure[linenumbering]{$\mathcal{O}_{\Gamma_2(\mathsf{fSub}).\mathsf{Alg}_\lambda}(x,\mu)$}{
+	\pcif \tau_{i-1}=\bot \pcthen \\
+	\pcind \mu' \sample \mathsf{PKE.Enc}(ek',\mu) \\
+	\pcelse \\
+	\pcind \mu' \leftarrow \tau_{i-1} \\
+	\tau_i \leftarrow \mu' \\
+	y \sample \mathcal{O}_\mathsf{fSub.Alg_\lambda}(x,\mu') \\
+	i \leftarrow i + 1 \\
+	\pcreturn y
+}
+\end{pcvstack}
+\pchspace
+\unskip\ \vrule\
+\begin{pcvstack}
+\myprocedure[]{$\mathcal{D}_2^{\mathcal{O}_\mathsf{PKE.Enc}}(pk)$}{
+	\mathrm{SEC}^g\text{ with the first part of} \\
+	\text{$ek=(ek', \overline{k})$, which is generated} \\
+	\text{by $\Gamma_2(\mathsf{fSub}).\mathsf{KeyGen}$, replaced by} \\
+	\text{$pk$, and $\Gamma_2(\mathsf{fSub}).\mathsf{Alg}_{\lambda}$} \\
+	\text{replaced by $\mathsf{Helper}$.}
+}
+\pcvspace
+\myprocedure[linenumbering]{$\mathsf{Helper}(x,ek,\tau,\mu)$}{
+	(pk, \overline{k}) \leftarrow ek \\
+	\pcif \tau = \bot \pcthen \\
+	\pcind \pcbox{\mu' \sample \mathcal{O}_\mathsf{PKE.Enc}(\mu)} \\
+	\pcind \tau' \leftarrow \bot \\
+	\pcelse \\
+	\pcind (\mu', \tau') \leftarrow \tau \\
+	(y,\tau') \sample \mathsf{fSub}.\mathsf{Alg}_\lambda(x, \overline{k}, \tau', \mu') \\
+	\pcreturn (y, (\mu', \tau'))
+}
+\end{pcvstack}
+\pchspace
+\unskip\ \vrule\
+\begin{pcvstack}
+\myprocedure[linenumbering]{$\mathcal{V}_2(\overline{k})$}{
+	(xk,ek') \sample \mathsf{PKE.KeyGen()} \\
+	ek \leftarrow (ek', \overline{k}) \\
+	\tau \leftarrow \bot \\
+	\mathcal{V}_1(ek)
+}
+\pcvspace
+\myprocedure[linenumbering]{$\mathcal{V}_2^{\mathcal{O}'_j, j\in J\subseteq \{1,...,t\}}(x)$}{
+	y \sample \mathcal{V}_1^{\mathcal{O}_j, j\in J\subseteq \{1,...,t\}}(x) \\
+	\pcreturn y
+}
+\pcvspace
+\myprocedure[linenumbering]{$\mathcal{O}_{j}(x), 1\le j \le t_1$}{
+	\pcif \tau=\bot \pcthen \\
+	\pcind \mu' \sample \mathsf{PKE.Enc}(ek',\bf{0}) \\
+	\pcelse \mu' \leftarrow \tau \\
+	\tau \leftarrow \mu' \\
+	y \sample \mathcal{O}'_j(x,\mu') \\
+	\pcreturn y
+}
+\pcvspace
+\myprocedure[linenumbering]{$\mathcal{O}_{j}(x), t_1\le j \le t$}{
+	y \sample \mathcal{O}'_j(x) \\
+	\pcreturn y
+}
+\end{pcvstack}
+\end{pchstack}
+\caption[Adversaries $\mathcal{U}_2,\mathcal{D}_2,$ and $\mathcal{V}_2$ for the proof of \autoref{theorem:gen2}]{Adversaries $\mathcal{U}_2,\mathcal{D}_2,$ and $\mathcal{V}_2$ for the proof of \autoref{theorem:gen2}. For $\mathcal{U}_2$ and $\mathcal{V}_2$, queries made by $\mathcal{U}_1$ and $\mathcal{V}_1$ to their oracles are answered by using the oracles provided to them as indicated. $\mathcal{D}_2$ runs the indicated code to simulate the SEC$^g$ game, and any oracle query that would use $\Gamma_2(\mathsf{fSub}).\mathsf{Alg}_{\lambda}(x,ek,\tau,\mu)$ is answered using the code in $\mathsf{Helper}$.}
+\label{game:UDV2}
+\end{figure}
+
+Let $b_\text{PKE}$ denote the bit from the IND-CPA$_\mathsf{PKE}(\mathcal{D}_2)$ game. Note that if $b_\text{PKE}=1$, then the oracle simulated by $\mathcal{D}_2$ proceeds exactly as in game $K_1$, since in $K_1$ the only value of $\mu$ passed to the $\mathsf{Helper}$ function is 0. If $b_\text{PKE}=0$, then $\mathcal{D}_2$ proceeds exactly as in game $K_0$. Thus we have
+\shortlongeqn[,]{
+\condprob{\mathcal{D}_2 \Rightarrow 1}{b_\text{PKE} = 1} = \prob{K_1}
+}
+\shortlongeqn[,]{
+\condprob{\mathcal{D}_2 \Rightarrow 1}{b_\text{PKE} = 0} = \prob{K_0}
+}
+and hence
+\shortlongeqn[.]{
+|\prob{K_1}-\prob{K_0}| = 2\text{Adv}^{\text{IND-CPA}}_\mathsf{PKE}(\mathcal{D}_2)
+}
+
+Next, we will construct the adversary $\mathcal{V}_2$ in the game $\mathrm{SEC'}_{\mathsf{fSub}}$ directly. Suppose that the game SEC provides oracles $\mathcal{O}_j$ for $1\le j\le t$, each with inputs labeled $x$ and outputs labeled $y$ as tuples. After being modified for game SEC$'$, assume that oracles $\mathcal{O}_1, ... \mathcal{O}_{t_1}$ for some $1 \le t_1 \le t$ are $\mu$-oracles, and the rest are not. The adversary $\mathcal{V}_2$ is given in \autoref{game:UDV2}.
+
+We claim that $\mathcal{V}_2$ exactly simulates the game $\mathrm{SEC}^0_{\Gamma_2(\mathsf{fSub})}$ for $\mathcal{V}_1$. The argument and construction are very similar to the symmetric detectability result. Observe that for any query to any oracle accepting a parameter $\mu$ that $\mathcal{V}_1$ makes, the value of $\mu'$ passed to $\mathcal{V}_2$'s oracle $\mathcal{O}'_j$ is an encryption of $\bf{0}$ under $\mathsf{PKE}$. Furthermore, the same $\mu'$ is reused in all future oracle invocations. All oracles not accepting a parameter $\mu$ are provided directly to $\mathcal{V}_1$. This exactly simulates the $\mathrm{SEC}^0_{\Gamma_2(\mathsf{fSub})}$ game. Hence $\prob{K_1}=\prob{\mathrm{SEC}^0_{\Gamma_2(\mathsf{fSub})}(\mathcal{V}_1)}=\prob{\mathrm{SEC}'_{\mathsf{fSub}}(\mathcal{V}_2)}=\prob{K_2}$.
+
+Combining these results, we get
+\iffullversion
+\begin{align*}
+\mathrm{Adv}^{\mathrm{SEC}^g}_{\Gamma_2(\mathsf{fSub})}(\mathcal{V}_1)
+&= |\prob{K_0}-\phi| \\
+&= |\prob{K_0}-\prob{K_1}+\prob{K_1}-\phi| \\
+&\le |\prob{K_0}-\prob{K_1}|+|\prob{K_2}-\phi| \\
+&= \mathrm{Adv}^{\mathrm{SEC'}}_{\mathsf{fSub}}(\mathcal{V}_2) + 2\mathrm{Adv}^{\mathrm{IND}\text{-}\mathrm{CPA}}_\mathsf{PKE}(\mathcal{D}_2),
+\end{align*}
+\else
+\[
+\mathrm{Adv}^{\mathrm{SEC}^g}_{\Gamma_2(\mathsf{fSub})}(\mathcal{V}_1) \le \mathrm{Adv}^{\mathrm{SEC'}}_{\mathsf{fSub}}(\mathcal{V}_2) + 2\mathrm{Adv}^{\mathrm{IND}\text{-}\mathrm{CPA}}_\mathsf{PKE}(\mathcal{D}_2),
+\]
+\fi
+as desired.
+\end{proof}
+
+For the symmetric subversions on symmetric encryption from \cite{C:BelPatRog14} and \cite{CCS:BelJaeKan15}, we can show that the quantities $\mathrm{Adv}^{\mathrm{SEC'}}_{\mathsf{fSub}}$ and $\mathrm{Adv}^{\mathrm{ASRDET}\$}_{\mathsf{fSub}}$ are small for any adversary; the proofs in \autoref{sec:asymASA} and \autoref{sec:asymASA2} did essentially that. Proving these advantages are small for a given flexible ASA $\mathsf{fSub}$ would allow one to draw conclusions about the undetectability and security of $\Gamma_1(\mathsf{fSub})$ and $\Gamma_2(\mathsf{fSub})$ using the theorems in this section.

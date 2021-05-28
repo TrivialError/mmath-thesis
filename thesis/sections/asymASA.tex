@@ -1,0 +1,315 @@
+\chapter{A Type 1 Asymmetric ASA on Symmetric Encryption} \label{sec:asymASA}
+Now that we have established a good framework from which to evaluate the undetectability of stateful ASAs, we will present a simple modification to the subversion from \cite{C:BelPatRog14} to get a type 1 asymmetric ASA on a symmetric encryption scheme. Recall  that a type 1 asymmetric ASA must be undetectable in the augmented state reset detectability game ASRDET of \autoref{figure:detectdefs}.
+
+In order to construct an asymmetric ASA which is undetectable against an adversary with the embedded key, we will use an additional building block: public-key encryption with ciphertexts that are indistinguishable from random. We recall the notion of ciphertext indistinguishability from random bits for public-key encryption schemes: let $\mathsf{PKE}$ be a public-key encryption scheme, and consider the game in \autoref{game:roi}. In this game, adversary $\mathcal{B}$ is tasked with deciding whether the oracle provided to it is returning encryptions under $\mathsf{PKE.Enc}$ or random bits. The advantage of $\mathcal{B}$ is defined as
+\shortlongeqn[.]{
+\text{Adv}^\mathrm{IND\$}_\mathsf{PKE}(\mathcal{B})=\lvert \prob{\text{IND\$}_\mathsf{PKE}(\mathcal{B})}-\frac{1}{2} \rvert
+}
+Informally, we say that the scheme $\mathsf{PKE}$ is IND\$-secure if the advantage of any efficient adversary $\mathcal{B}$ is small.
+
+\begin{figure}
+\centering
+\begin{pchstack}
+\myprocedure[linenumbering]{IND\$$_{\mathsf{PKE}}(\mathcal{B})$}{
+	(pk, sk) \sample \mathsf{PKE.KeyGen()} \\
+	b \sample \{0,1\} \\
+	b' \sample \mathcal{B}^{\mathcal{O}_\mathsf{PKE.Enc}}(pk) \\
+	\pcreturn b=b'
+}
+\pchspace
+\myprocedure[linenumbering]{$\mathcal{O}_\mathsf{PKE.Enc}(m)$}{
+	\pcif b=0 \pcthen \\
+	\pcind c \sample \mathsf{PKE.Enc}(pk,m) \\
+	\pcif b=1 \pcthen \\
+	\pcind c \sample \{0,1\}^\mathsf{PKE.clen} \\
+	\pcreturn c
+}
+\end{pchstack}
+\caption[The ciphertext indistinguishability-from-random game for a public-key encryption scheme]{The ciphertext indistinguishability-from-random game for a public-key encryption scheme $\mathsf{PKE}$.}
+\label{game:roi}
+\end{figure}
+
+We present our asymmetric ASA, $\mathsf{ASub}$, against a symmetric encryption scheme $\mathsf{SE}$, in \autoref{figure:asymsubv}. This ASA uses an IND\$-secure public-key encryption scheme PKE, and a parameter $s$ to bound the number of loops the ASA will execute before returning a value. The essence of the subversion is that the secret key to be exfiltrated is encrypted using the public-key encryption scheme, then a technique similar to that used by \cite{C:BelPatRog14} is used to leak the resulting ciphertext. The subverter can recover the key by decrypting the extracted ciphertext.
+
+\begin{wrapfigure}{L}{0.4\textwidth}
+\centering
+\myprocedure[linenumbering]{$\textsf{ASub.Enc}(k,m,ek,\tau)$}{
+	\pcif \tau = \bot \pcthen \\
+	\pcind \sigma \leftarrow 0; \kappa \sample \textsf{PKE.Enc}(ek, k) \\
+	\pcelse (\sigma, \kappa) \leftarrow \tau \\
+	\pcif \sigma = \mathsf{PKE.clen} \pcthen \\
+	\pcind \sigma \leftarrow 1; \kappa \sample \mathsf{PKE.Enc}(ek, k) \\
+	\pcelse \sigma \leftarrow \sigma + 1 \\
+	j \leftarrow 0 \\
+	\textbf{do} \\
+	\pcind j \leftarrow j + 1 \\
+	\pcind r \sample \{0,1\}^\mathsf{SE.rlen} \\
+	\pcind c \leftarrow \mathsf{SE.Enc}(k, m; r) \\
+	\pcind w \leftarrow \mathsf{F}(ek, c) \\
+	\pcuntil \kappa[\sigma] = w \textbf{ or } j = s \\
+	\tau \leftarrow (\sigma, \kappa) \\
+	\pcreturn (c, \tau)
+}
+\caption[Type 1 asymmetric ASA on symmetric encryption]{Type 1 asymmetric ASA on symmetric encryption.}
+\label{figure:asymsubv}
+\end{wrapfigure}
+
+In practice, the main advantage to a type 1 asymmetric ASA lies in the fact that the subverter maintains possession of all information required to complete their attack. This differs from the symmetric case, where the same key used to extract values from the target user is also embedded in the algorithm that the target user is using. There are practical situations in which it may be relevant to consider the possibility of a detector who knows $ek$. For example, suppose the user is aware of other subverted implementations, for which the corresponding $ek$ is known, and wishes to test if the implementation they are using has also been subverted with the same key. In this section, we will consider the user $\mathcal{U}$ as being the detector with knowledge of the key $ek$. Indeed, if an ASA is undetectable in our augmented detection game ASRDET, then neither the user nor anyone else without the key $xk$ is able to detect the ASA, and hence no third party is able to exploit the ASA either. In \autoref{sec:asymASA2}, we will consider a type 2 asymmetric ASA, which is undetectable to a user without $ek$, and detectable to, but nonetheless still secure against, a third party with knowledge of $ek$. This will more fully explore the nuance associated with the benefits of an asymmetric ASA with respect to all parties who may possibly be involved.
+
+The main drawback of an asymmetric ASA, especially when it comes to attacking symmetric schemes, is speed. An asymmetric ASA that makes use of asymmetric cryptography will inevitably be slower than the symmetric algorithms being subverted. This exacerbates an existing issue with many ASAs that rely on coin rejection sampling, including ours: since the algorithm being subverted must be run multiple times, a detector could time the execution of the algorithm and conclude that a slower algorithm is subverted (this side-channel attack is not captured in our framework). We do note, however, that our ASA uses far fewer executions of asymmetric algorithms than symmetric ones, and moreover the asymmetric executions can be done ahead of time (but must be after the algorithm substitution has occurred). One could imagine a clever implementation of our ASA where the evaluation of $\mathsf{PKE.Enc}$ is spread out over many calls to $\mathsf{ASub.Enc}$, amortizing the time penalty added by the use of a public-key encryption scheme.
+
+\section{Undetectability of our type 1 asymmetric ASA}
+
+The following theorem shows that $\mathsf{ASub}$ of \autoref{figure:asymsubv} is undetectable in the augmented state reset detectability game ASRDET, when modeling $\mathsf{F}$ as a random oracle.
+
+\begin{theorem} \label{theorem:detect}
+Let $\mathcal{U}$ be an adversary in the augmented state reset detectability game in \autoref{game:gendetect}, $\mathrm{ASRDET}_\mathsf{ASub}(\mathcal{U})$, with symmetric encryption scheme $\mathsf{SE}$ as $\mathsf{\Lambda}$ and $\mathsf{SE.Enc}$ as $\mathsf{\Lambda.Alg}_\lambda$, where $\mathsf{ASub.Enc}$ is the algorithm given in \autoref{figure:asymsubv}. Assume that $\mathsf{F}$ is an ideal hash function, which we model as a random oracle $\mathsf{H}$. If $n,q$ are the number of queries that $\mathcal{U}$ makes to its encryption oracle and the random oracle respectively, and $\eta$ is the min-entropy of $\mathsf{SE.Enc}$, then there is an adversary $\mathcal{B}$ against the $\mathrm{IND\$}$-security of $\mathsf{PKE}$ such that
+\shortlongeqn[.]{
+\mathrm{Adv}^{\mathrm{ASRDET}}_{\mathsf{ASub}}(\mathcal{U}) \leq 
+2\mathrm{Adv}^{\mathrm{IND\$}}_{\mathsf{PKE}}(\mathcal{B})
++ ((ns)^2+2nsq-ns)\cdot 2^{-\eta-1}
+}
+The running time of $\mathcal{B}$ is about that of $\mathcal{U}$ and $\mathcal{B}$ makes $n$ queries to its own encryption oracle.
+\end{theorem}
+
+\begin{proof}
+Consider the augmented state reset detectability game of \autoref{game:gendetect}, with all the substitutions in the theorem statement, and $\mathsf{F}$ modeled as the random oracle $\mathsf{H}$ provided to the adversary $\mathcal{U}$. This is shown in \autoref{game:G01234}, as $G_0$. The oracle $\mathsf{H}$ only takes input $c$, since $ek$ is fixed throughout the game.
+
+\begin{figure}[t]
+\centering
+\begin{pchstack}
+\begin{pcvstack}
+\myprocedure{$G_{0,1,2,3,4}(\mathcal{U})$}{
+	ek, xk \sample \mathsf{ASub.KeyGen()}\\
+	C \leftarrow \emptyset \\
+	\pcbox{i \leftarrow 1}_{0,1} \\
+	\pcbox{\tau_0 \leftarrow \bot}_{0,1} \\
+	b \sample \{0,1\} \\
+	\pcbox{b' \sample \mathcal{U}^{\mathcal{O}_\mathsf{Enc},\mathsf{Reset},\mathsf{H}}(ek)}_{0,1} \\
+	\pcbox{b' \sample \mathcal{U}^{\mathcal{O}_\mathsf{Enc},\mathsf{H}}(ek)}_{2,3} \\
+	\pcbox{b' \sample \mathcal{U}^{\mathsf{SE.Enc},\mathsf{H}}(ek)}_{4} \\
+	\pcreturn b=b'
+}
+\pcvspace
+\myprocedure{$\mathsf{Reset}(j)$, \hfill $0\le j<i$}{
+	\pcif b = 1 \pcthen \\
+	\pcind \tau_{i} \leftarrow \tau_{j} \\
+	\pcind i \leftarrow i + 1
+}
+\pcvspace
+\myprocedure{$\mathsf{H}(c)$}{
+	\pcif c \notin C \pcthen \\
+	\pcind w_c \sample \{0,1\} \\
+	\pcind C \leftarrow C\cup \{c\} \\
+	\pcreturn w_c
+}
+\end{pcvstack}
+\pchspace
+\begin{pcvstack}
+\myprocedure{$\mathcal{O}_\mathsf{Enc}(k,m)$}{
+	\pcif b=0 \pcthen c \sample \mathsf{SE.Enc}(k,m) \\
+	\pcif b=1 \pcthen \\
+	\pcind \pcbox{(c, \tau_i) \sample \mathsf{Helper}_{0/1}(k,m,ek,\tau_{i-1})}_{1,2} \\
+	\pcind \pcbox{c \sample \mathsf{Helper}_{2/3}(k,m,ek)}_{2,3} \\
+	\pcind \pcbox{i \leftarrow i + 1}_{1,2} \\
+	\pcreturn c
+}
+\pcvspace
+\begin{pchstack}
+\myprocedure{$\mathsf{Helper}_{0/1}(k,m,ek,\tau)$}{
+	\pcif \tau = \bot \pcthen \\
+	\pcind \pcbox{\kappa \sample \mathsf{PKE.Enc}(ek, k)}_0 \\
+	\pcind \pcbox{\kappa \sample \{0,1\}^\mathsf{PKE.clen}}_1 \\
+	\pcind \sigma \leftarrow 0 \\
+	\pcelse (\sigma, \kappa) \leftarrow \tau \\
+	\pcif \sigma = \mathsf{PKE.clen} \pcthen \\
+	\pcind \sigma \leftarrow 1 \\
+	\pcind \pcbox{\kappa \sample \mathsf{PKE.Enc}(ek, k)}_0 \\
+	\pcind \pcbox{\kappa \sample \{0,1\}^\mathsf{PKE.clen}}_1 \\
+	\pcelse \sigma \leftarrow \sigma + 1 \\
+	j \leftarrow 0 \\
+	\textbf{do} \\
+	\pcind j \leftarrow j + 1 \\
+	\pcind r \sample \{0,1\}^\mathsf{SE.rlen} \\
+	\pcind c \leftarrow \mathsf{SE.Enc}(k, m; r) \\
+	\pcind \pcif c \notin C \pcthen \\
+	\pcind \pcind w_c \sample \{0,1\} \\
+	\pcind \pcind C \leftarrow C\cup \{c\} \\
+	\pcind w \leftarrow w_c \\
+	\pcuntil \kappa[\sigma] = w \textbf{ or } j = s \\
+	\tau \leftarrow (\sigma, \kappa) \\
+	\pcreturn (c, \tau)
+}
+\pchspace
+\myprocedure{$\mathsf{Helper}_{2/3}(k,m,ek)$}{
+	\kappa \sample \{0,1\} \\
+	j \leftarrow 0 \\
+	\textbf{do} \\
+	\pcind j \leftarrow j + 1 \\
+	\pcind r \sample \{0,1\}^\mathsf{SE.rlen} \\
+	\pcind c \leftarrow \mathsf{SE.Enc}(k, m; r) \\
+	\pcind \pcbox{\pcif c \notin C \pcthen}_2 \\
+	\pcind \pcind w_c \sample \{0,1\} \\
+	\pcind \pcind C \leftarrow C\cup \{c\} \\
+	\pcind \pcbox{\pcelse \mathsf{bad} \leftarrow \mathsf{true}}_2 \\
+	\pcind w \leftarrow w_c \\
+	\pcuntil \kappa = w \textbf{ or } j = s \\
+	\pcreturn c
+}
+\end{pchstack}
+\end{pcvstack}
+\end{pchstack}
+\caption[Games $G_0$ through $G_4$ for the proof of \autoref{theorem:detect}]{Games $G_0$ through $G_4$ for the proof of \autoref{theorem:detect}. For boxed code, only the games indicated in the subscripts contain that code.}
+\label{game:G01234}
+\end{figure}
+
+We proceed by a sequence of games $G_0,...,G_4$, as shown in \autoref{game:G01234}. Let $G_0$ be the undetectability game with the random oracle implementation. $G_1$ is the same as $G_0$ but with $\kappa$ sampled randomly instead of computed as an encryption of $k$. $G_2$ and $G_3$ are shown in \autoref{game:G01234}. $G_4$ is the augmented state reset detectability game where the encryption oracle is replaced by an oracle that simply returns $\mathsf{SE.Enc}(k,m)$.
+
+\iffullversion
+
+Let $\mathcal{B}$, defined in \autoref{game:B}, be an adversary to the IND\$ game for $\mathsf{PKE}$. Acting as a challenger, $\mathcal{B}$ simulates the augmented detection game for $\mathcal{U}$, in particular using the $\mathsf{PKE.Enc}$ oracle and public key given to it to simulate $\mathsf{ASub.Enc}$. Specifically, instead of $\mathsf{PKE.Enc}$ being used in the subverted algorithm, $\mathcal{B}$ uses its provided oracle.
+
+\begin{figure}
+\centering
+\begin{pchstack}
+\begin{pcvstack}
+\myprocedure[linenumbering]{$\mathcal{B}^{\mathcal{O}_\mathsf{PKE.Enc}}(pk)$}{
+	i \leftarrow 1 \\
+	\tau_0 \leftarrow \bot \\
+	C \leftarrow \emptyset \\
+	b_\text{det} \sample \{0,1\} \\
+	b_\text{det}' \sample \mathcal{U}^{\mathcal{O}_\mathsf{Enc},\mathsf{Reset},\mathsf{H}}(pk) \\
+	\pcif b_\text{det}=b_\text{det}' \\
+	\pcind \pcreturn 1 \\
+	\pcelse \\
+	\pcind \pcreturn 0
+}
+\pcvspace
+\myprocedure[linenumbering]{$\mathsf{Reset}(j)$, \hfill $0\le j<i$}{
+	\pcif b_\text{det} = 1 \pcthen \\
+	\pcind \tau_{i} \leftarrow \tau_{j} \\
+	\pcind i \leftarrow i + 1
+}
+\pcvspace
+\myprocedure[linenumbering]{$\mathsf{H}(c)$}{
+	\pcif c \notin C \pcthen \\
+	\pcind w_c \sample \{0,1\} \\
+	\pcind C \leftarrow C\cup \{c\} \\
+	\pcreturn w_c
+}
+\end{pcvstack}
+\pchspace
+\begin{pcvstack}
+\myprocedure[linenumbering]{$\mathcal{O}_\mathsf{Enc}(k,m)$}{
+	\pcif b_\text{det}=0 \pcthen \\
+	\pcind c \sample \mathsf{SE.Enc}(k,m) \\
+	\pcif b_\text{det}=1 \pcthen \\
+	\pcind (c, \tau_i) \sample \mathsf{Helper}(k,m,pk,\tau_{i-1}) \\
+	\pcind i \leftarrow i + 1 \\
+	\pcreturn c
+}
+\pcvspace
+\myprocedure[linenumbering]{$\mathsf{Helper}(k,m,pk,\tau)$}{
+	\pcif \tau = \bot \pcthen \\
+	\pcind \pcbox{\kappa \sample \mathcal{O}_\mathsf{PKE.Enc}(k)} \\
+	\pcind \sigma \leftarrow 0 \\
+	\pcelse \\
+	\pcind (\sigma, \kappa) \leftarrow \tau \\
+	\pcif \sigma = \mathsf{PKE.clen} \pcthen \\
+	\pcind \sigma \leftarrow 1 \\ 
+	\pcind \pcbox{\kappa \sample \mathcal{O}_\mathsf{PKE.Enc}(k)} \\
+	\pcelse \\
+	\pcind \sigma \leftarrow \sigma + 1 \\
+	j \leftarrow 0 \\
+	\textbf{do} \\
+	\pcind j \leftarrow j + 1 \\
+	\pcind r \sample \{0,1\}^\mathsf{SE.rlen} \\
+	\pcind c \leftarrow \mathsf{SE.Enc}(k, m; r) \\
+	\pcind \pcif c \notin C \pcthen \\
+	\pcind \pcind w_c \sample \{0,1\} \\
+	\pcind \pcind C \leftarrow C\cup \{c\} \\
+	\pcind w \leftarrow w_c \\
+	\pcuntil \kappa[\sigma] = w \textbf{ or } j = s \\
+	\tau \leftarrow (\sigma, \kappa) \\
+	\pcreturn (c, \tau)
+}
+\end{pcvstack}
+\end{pchstack}
+\caption[Adversary $\mathcal{B}$ for the proof of \autoref{theorem:detect}]{Adversary $\mathcal{B}$ for the proof of \autoref{theorem:detect}.}
+\label{game:B}
+\end{figure}
+
+Let $b_\$$ denote the bit from the IND\$$_\mathsf{PKE}(\mathcal{B})$ game. Note that if $b_\$=1$, then the $\mathsf{Enc}$ oracle simulated by $\mathcal{B}$ proceeds exactly as in game $G_1$, and if  $b_\$=0$, then it proceeds exactly as in game $G_0$. Thus we have
+\else
+Let $\mathcal{B}$ be an adversary to the IND\$ game for $\mathsf{PKE}$. The adversary $\mathcal{B}$ will act as a challenger in the game $G_0$ with a few small changes: it will not generate a key pair itself, instead using the public key $pk$ provided to it in the IND\$ game; it will return 1 if $\mathcal{U}$ correctly guesses the bit $b$ and 0 otherwise; and it will use its provided $\mathcal{O}_\mathsf{PKE.Enc}$ oracle in the place of $\mathsf{PKE.Enc}$. This can all be done efficiently. In this way, $\mathcal{B}$ interpolates between games $G_0$ and $G_1$. In particular, let $b_\$$ denote the bit from the IND\$$_\mathsf{PKE}(\mathcal{B})$ game. Note that if $b_\$=1$, then the $\mathsf{Enc}$ oracle simulated by $\mathcal{B}$ proceeds exactly as in game $G_1$, and if  $b_\$=0$, then it proceeds exactly as in game $G_0$. Thus we have
+\fi
+\shortlongeqn[,]{
+\condprob{\mathcal{B} \Rightarrow 1}{b_\$ = 1} = \prob{G_1}
+}
+\shortlongeqn[,]{
+\condprob{\mathcal{B} \Rightarrow 1}{b_\$ = 0} = \prob{G_0}
+}
+and hence
+\shortlongeqn[.]{
+|\prob{G_1}-\prob{G_0}| = 2\text{Adv}^{\text{IND\$}}_\mathsf{PKE}(\mathcal{B})
+}
+
+Next, consider $G_2$ shown in \autoref{game:G01234}. We claim that $\prob{G_2}=\prob{G_1}$. To see this, note that lines 1--10 of the $\mathsf{Helper}_1$ function simply act as bookkeeping in order to use a single bit of $\kappa$ for each encryption, and to generate a new $\kappa$ once we've iterated through its bits. The index $\sigma$ is used to iterate through $\kappa$ and $\kappa$ is re-sampled when all the bits are used. This procedure is identical to sampling a single random bit for each call, hence our equality. Notice also that this removes any dependence on the state, and so the state reset oracle no longer has any function. The only other change is the addition of a $\mathsf{bad}$ variable, used in the next game transition.
+
+In game $G_3$, shown in \autoref{game:G01234}, we replace the selection of $w$ in the encryption oracle with true random sampling of $w$, regardless of whether $c$ was input to the random oracle before. Let $\mathsf{Col}$ be the event where $\mathsf{bad}$ is set to $\mathsf{true}$ in game $G_2$. This happens when some $c$ previously generated by the encryption oracle or previously queried in the random oracle is obtained again during an encryption oracle query. We can bound $\prob{\mathsf{Col}}$ from above by considering the case where all the random oracle queries happen before the encryption oracle queries. Let $\eta$ be the min-entropy of $\mathsf{SE.Enc}$. Then we have that
+\shortlongeqn[.]{
+\prob{\mathsf{Col}} \le \left(\binom{ns+q}{2} - \binom{q}{2}\right)\cdot 2^{-\eta} = ((ns)^2+2nsq-ns)\cdot 2^{-\eta-1}
+}
+
+By the Fundamental Lemma of Game-Playing \cite{EC:BelRog06}, we have
+\shortlongeqn[.]{
+|\prob{G_3}-\prob{G_2}| \le \prob{\mathsf{Col}} \le ((ns)^2+2nsq-ns)\cdot 2^{-\eta-1}
+}
+
+Finally, $G_4$ is the detectability game where the encryption oracle is replaced by an oracle that simply returns $\mathsf{SE.Enc}(k,m)$. In game $G_3$, since the loop condition is no longer dependent on the selection of $c$, the $\mathsf{Helper}_3$ is identical to $\mathsf{SE.Enc}(k,m)$. Hence $\prob{G_3}=\prob{G_4}$. Further, note that $\prob{G_4}=\frac{1}{2}$, since the encryption oracle is not dependent on $b$.
+
+Putting all these results together, we have
+\iffullversion
+\begin{align*}
+\text{Adv}^\text{ASRDET}_\mathsf{ASub.Enc}(\mathcal{U})
+&= |\prob{G_0}-\frac{1}{2}| \\
+&= |\prob{G_0}-\prob{G_1}+\prob{G_1}-\prob{G_2}+\prob{G_2}-\prob{G_3}+\prob{G_3}-\frac{1}{2}| \\
+&\le |\prob{G_0}-\prob{G_1}|+|\prob{G_1}-\prob{G_2}|+|\prob{G_2}-\prob{G_3}|+|\prob{G_3}-\frac{1}{2}| \\
+&\le 2\text{Adv}^{\text{IND\$}}_\mathsf{PKE}(\mathcal{B}) + ((ns)^2+2nsq-ns)\cdot 2^{-\eta-1} + |\prob{G_4}-\frac{1}{2}|\\
+&= 2\text{Adv}^{\text{IND\$}}_\mathsf{PKE}(\mathcal{B}) + ((ns)^2+2nsq-ns)\cdot 2^{-\eta-1},
+\end{align*}
+\else
+\[
+\text{Adv}^\text{ASRDET}_\mathsf{ASub.Enc}(\mathcal{U})\le 2\text{Adv}^{\text{IND\$}}_\mathsf{PKE}(\mathcal{B}) + ((ns)^2+2nsq-ns)\cdot 2^{-\eta-1},
+\]
+\fi
+as desired.
+\end{proof}
+
+Assuming that $\mathsf{PKE}$ is IND\$-secure and that $n$ and $q$ are small in comparison to $2^{\eta}$, which is the case for a sufficiently randomized encryption scheme, \autoref{theorem:detect} shows that the ASA given by the subversion in \autoref{figure:asymsubv} is undetectable in the augmented state reset detection game ASRDET, proving our claim that $\mathsf{ASub}$ is a type 1 asymmetric ASA.
+
+
+\section{Key recovery of our type 1 asymmetric ASA} \label{sec:keyrec1}
+The goal of the ASA presented in \autoref{figure:asymsubv} is to recover the secret key $k$ used in the encryption algorithm $\mathsf{SE.Enc}$. Some authors, such as \cite{CCS:BelJaeKan15}, have treated key recovery formally with a key recovery game. Their approach largely carries over here, and one could readily develop a theorem bounding from below the probability that the subverter can recover the secret key for our ASA. We will only outline the ideas involved to give the reader a good sense of how key recovery works.
+
+Once the subverted algorithm is being used by a user, the subverter will attempt to recover the secret key $k$ by observing the generated ciphertexts. These ciphertexts are generated according to a message distribution that the subverter has no control over, and hence the recovery strategy will be independent of the messages used. For our ASA, the subverter can use the following method to recover the secret key:
+\begin{enumerate}\itemsep0em
+\item Collect ciphertexts $c_1,...,c_n$.
+\item Group ciphertexts together into consecutive groups of size $\mathsf{PKE.clen}$.
+\item For each ciphertext $c_\sigma$ in each group, compute $w_\sigma = \mathsf{F}(ek, c_\sigma)$.
+\item For each resulting group of bits, concatenate all the $w_\sigma$ to obtain $\kappa$ and compute $k'=\mathsf{PKE.Dec}(xk,\kappa)$.
+\item Each $k'$ obtained in step 4 is a candidate for $k$.
+\end{enumerate}
+
+We can estimate the probability of success of key recovery. We make a few simplifying assumptions; namely, that $\mathsf{F}$ is a good PRF, and that there is sufficient randomness in $\mathsf{SE.Enc}$ so that no two of the ciphertexts $c_1,...,c_n$ are the same. The effect of these assumptions can be quantified\footnote{There are several examples of this in the literature, as well as in our proof of \autoref{theorem:detect} in the previous subsection.}, but we will omit those details here, and simply note that such quantification will result in $2\text{Adv}^{\mathrm{PRF}}_\mathsf{F}(\mathcal{F})+n^2s^2\cdot 2^{-\eta-1}$, where $\eta$ is the min-entropy of $\mathsf{SE.Enc}$ and $\mathcal{F}$ is a PRF adversary, being subtracted from the probability of key recovery. These assumptions allow us to calculate the success probability when all the $w$ values are randomly generated, which is much simpler.
+
+Suppose that $\mathsf{PKE}$ is a $\delta$-correct public-key encryption scheme. Let $n$ be the total number of ciphertexts intercepted by the subverter. For each group of $\mathsf{PKE.clen}$ ciphertexts (of which there are $\lfloor \nicefrac{n}{\mathsf{PKE.clen}} \rfloor$), the probability that every ciphertext $c$ in the group was chosen to successfully leak a bit ($\kappa[\sigma]=\mathsf{F}(ek,c)$) is $(1-2^{-s})^\mathsf{PKE.clen}$ (this is where we assume each $w$ is random), and the probability that the group decrypts correctly is $\delta$. Hence the probability that one of the keys $k'$ obtained in step 5 is the key $k$ is
+\shortlongeqn[.]{
+P_{kr}=1-\left(1-\delta(1-2^{-s})^\mathsf{PKE.clen}\right)^{\lfloor\frac{n}{\mathsf{PKE.clen}}\rfloor}
+}
+As an example, suppose $\mathsf{PKE.clen}=400$ (an IND\$-secure public-key scheme with ciphertext lengths around this is given by Möller \cite{ESORICS:Moller04}), $n=1600$, $s=7$, and $\delta=1$. Then $P_{kr}\ge 0.6$. The value of $s$ can easily be increased to improve this probability, for example, if $\delta$ is lower, $\mathsf{PKE.clen}$ is higher, or the number of ciphertexts $n$ that the subverter can intercept is small.
+
+\subsection{Key recovery in the presence of state resets}
+We note here that if the the user of the encryption scheme performs regular state resets of the type used in the detection scenario, then key recovery becomes very unlikely for this ASA. Since the entire \textsf{PKE} ciphertext $\kappa$ must be exfiltrated before the subverter is able to decrypt it to recover $k$, reset of state would restart the process of key recovery. Since $\kappa$ is required to be indistinguishable from random, we do not have the option of reconstructing the same $\kappa$ after a state reset. With $\mathsf{PKE.clen}=400$, a state reset after every 399 encryptions would successfully thwart this ASA.
+
+Such a defense may or may not be practical, depending on the specific implementation of the encryption scheme and the execution environment. For example, a user may not have sufficient access to an encryption scheme provided to them as a black-box to perform such state resets, and would rely on the provider of the encryption service to include such a mitigation. Furthermore, the performance impacts may be significant. Clearing sections of memory between encryptions may be a quick operation, but the ASA may decide to place state in storage instead (at increased risk of being detected from storage monitoring). Resetting to a previous virtual machine image would thwart this as well, but at increased performance cost. Such performance penalties may be mitigated by containerized implementations of cryptographic schemes. We encourage future work on the feasibility of this approach, and more generally on the use of state resets as a countermeasure to ASAs.

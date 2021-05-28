@@ -1,0 +1,301 @@
+\chapter{Using State Reset to Detect ASAs} \label{sec:statereset}
+
+State reset detection techniques against the undetectability of stateful ASAs have been acknowledged since the work of Bellare, Paterson, and Rogaway \cite{C:BelPatRog14}, but apart from Baek, Susilo, Kim, and Chow \cite{BSKC2019}, the formalization of the state reset capabilities of a user $\mathcal{U}$ has been ignored. In their paper, \cite{BSKC2019} capture the idea of state reset with the ability of $\mathcal{U}$ to reset state to a null value. This is akin to wiping the memory of the program running a cryptographic algorithm, or rebooting the machine. We wish, however, to capture a stronger notion of state reset. For example, when running on a virtual machine, instead of being wiped, memory could be cloned during imaging, allowing a user to force a program to run from the same point of execution multiple times. This would allow a user to reset the state of a subverted algorithm to any previously used state.
+
+We will define two similar games: an augmented and a non-augmented (or regular) state reset detection game. These two games differ only in that, in the augmented game, $\mathcal{U}$ is given the embedded key $ek$. Hence, the augmented game is intended primarily for asymmetric ASAs, and the non-augmented game is intended for symmetric ASAs (this is not an absolute requirement, and we will consider regular detectability of asymmetric ASAs in \autoref{sec:asymASA2}). This captures the difference between, for example, a nation state reverse-engineering one implementation to recover the embedded key, and a casual end-user doing black-box detection. The state reset detection games (ASRDET$_{\mathrm{Sub}}(\mathcal{U})$ and SRDET$_{\mathrm{Sub}}(\mathcal{U})$ respectively) are given in \autoref{game:gendetect}, for some cryptographic scheme $\mathsf{\Lambda}$ and ASA \textsf{Sub}. These are distinguishability games, where $\mathcal{U}$ is asked to determine whether the oracle it is using is returning values according to the subverted algorithm $\mathsf{Sub.Alg}_\lambda$ or the original algorithm $\mathsf{\Lambda.Alg}_\lambda$. All state variables used by the subverted algorithm are saved between oracle calls, and $\mathcal{U}$ has access to an oracle $\mathsf{Reset}$ which allows it to reset state to any previously saved state (but does not give $\mathcal{U}$ the contents of the state).
+
+\begin{figure}
+\centering
+\begin{pchstack}
+\begin{pcvstack}
+\myprocedure[linenumbering]{$\pcbox{\!\!\text{A}\!\!}$SRDET$_{\mathsf{Sub}}(\mathcal{U})$}{
+	(xk,ek) \sample \mathsf{Sub.KeyGen()}\\
+	i \leftarrow 1 \\
+	\tau_0 \leftarrow \bot \\
+	b \sample \{0,1\} \\
+	b' \sample \mathcal{U}^{\mathcal{O}_{\mathsf{Alg}_\lambda},\mathsf{Reset}}\pcbox{\!(ek)\!} \\
+	\pcreturn b=b'
+}
+\pcvspace
+\myprocedure[linenumbering]{\textsf{Reset}($j$), \hfill $0\le j<i$}{
+	\pcif b = 1 \pcthen \\
+	\pcind \tau_{i} \leftarrow \tau_{j} \\
+	\pcind i \leftarrow i + 1
+}
+\end{pcvstack}
+\pchspace
+\myprocedure[linenumbering]{$\mathcal{O}_{\mathsf{Alg}_\lambda}(x)$}{
+	\pcif b=0 \pcthen \\
+	\pcind y \sample \mathsf{\Lambda.Alg}_\lambda(x) \\
+	\pcif b=1 \pcthen \\
+	\pcind (y, \tau_i) \sample \mathsf{Sub.Alg}_\lambda(x, ek, \tau_{i-1}) \\
+	\pcind i \leftarrow i + 1 \\
+	\pcreturn y
+}
+\end{pchstack}
+\caption[The augmented and non-augmented state reset detection games]{The augmented and non-augmented state reset detection games. The augmented game ASRDET includes the code in the box; the non-augmented one SRDET does not.}
+\label{game:gendetect}
+\end{figure}
+
+For an adversary $\mathcal{U}$ in the state reset detectability games, we define the advantages of $\mathcal{U}$ as
+\shortlongeqn[]{
+\text{Adv}^\mathrm{SRDET}_\mathsf{Sub}(\mathcal{U})=\lvert \prob{\text{SRDET}_\mathsf{Sub}(\mathcal{U})}-\frac{1}{2} \rvert
+}
+and
+\shortlongeqn[.]{
+\text{Adv}^\mathrm{ASRDET}_\mathsf{Sub}(\mathcal{U})=\lvert \prob{\text{ASRDET}_\mathsf{Sub}(\mathcal{U})}-\frac{1}{2} \rvert
+}
+Informally, we say that $\mathsf{Sub}$ is undetectable if the corresponding advantage is small for any efficient adversary $\mathcal{U}$. Otherwise, it is detectable, and an adversary $\mathcal{U}$ with large advantage represents a strategy for detection.
+
+It is worth taking some time to compare our new detectability game with those in previous works. The detectability game in \cite{C:BelPatRog14} did not include state resets, and fully allowed stateful ASAs. \cite{CCS:BelJaeKan15} considered all stateful ASAs detectable, and formalized this by providing the state directly to $\mathcal{U}$ (the adversary in the detectability game), hence any non-$\bot$ state would lead to detection. They called this ``strong undetectability''. We also include the definition from \cite{BSKC2019} in this comparison, since, to our knowledge, they are the only other authors to include a state reset oracle in their detection analysis. Their state reset oracle only resets the state variables to their initial values, and not to any previously used values. A hierarchy here is clear, and we illustrate this in \autoref{figure:detectdefs}. The implications given can be seen by simply noting that with each game higher in the hierarchy, the adversary $\mathcal{U}$ in the detectability game is given more capabilities with respect to manipulation and knowledge of the state of the ASA.
+
+\begin{figure}
+\centering
+\begin{tikzpicture}[xscale=5,yscale=-1.2,state/.style={draw,minimum width=.75cm,minimum height=.75cm}]
+
+\node[state] (def1) at (0,0)            {\cite{C:BelPatRog14} undetectability, with no consideration of state.};
+\node[state] (def2) at ($(def1)-(0,1)$) {\cite{BSKC2019} undetectability, with simple state reset.};
+\node[state] (def3) at ($(def1)-(0,2)$) {Our (regular) undetectability, with sophisticated state reset.};
+\node[state] (def4) at ($(def1)-(0,3)$) {\cite{CCS:BelJaeKan15} undetectability (strong undetectability), disallowing state.};
+
+\draw[->] ($(-1pt,0)+(def4.south)$)--($(-1pt,0)+(def3.north)$);
+\draw[->] ($(-1pt,0)+(def3.south)$)--($(-1pt,0)+(def2.north)$);
+\draw[->] ($(-1pt,0)+(def2.south)$)--($(-1pt,0)+(def1.north)$);
+
+\draw[<-] ($(1pt,0)+(def4.south)$)
+	-- node[right] {\scriptsize\autoref{sec:bpranalysis}}
+	($(1pt,0)+(def3.north)$) node[pos=0.5] {\tiny /};
+\draw[<-] ($(1pt,0)+(def3.south)$)
+	-- node[right] {\scriptsize\autoref{sec:attackasas:bskc}}
+	($(1pt,0)+(def2.north)$) node[pos=0.5] {\tiny /};
+\draw[<-] ($(1pt,0)+(def2.south)$)
+	-- node[right] {\scriptsize\autoref{sec:attackasas:amv}}
+	($(1pt,0)+(def1.north)$) node[pos=0.5] {\tiny /};
+
+\end{tikzpicture}
+\caption[Relationships between detectability definitions in several works]{Relationships between various detectability games. Arrows indicate that if an ASA is undetectable in the game at the tail of the arrow, then it is also undetectable in the game at the head of the arrow. Crossed arrows indicate that there exists an ASA undetectable in the game at the tail of the arrow but detectable at the head of the arrow.}
+\label{figure:detectdefs}
+\end{figure}
+
+In fact, in the rest of this section, we will see that for each implication in  \autoref{figure:detectdefs}, there is a separation, meaning no two definitions are equivalent. First, in \autoref{sec:attackasas:amv}, we will use a simple state reset to detect an ASA that is undetectable in the \cite{C:BelPatRog14} model. In \autoref{sec:attackasas:bskc}, we will use our more sophisticated state reset to detect an ASA that is undetectable even with simple state resets. In \autoref{sec:bpranalysis}, we will show that the original ASA of \cite{C:BelPatRog14}, while detectable in the game of \cite{CCS:BelJaeKan15} due to the use of state, remains undetectable in our game. Note that these are not artificial constructions, but rather existing ASAs, which are illustrating the significant differences between the definitions in \autoref{figure:detectdefs}.
+
+
+\section{Detection of ASAs using state reset} \label{sec:attackasas}
+In this section we will look at published ASAs against different cryptographic primitives and see that they are detectable using our notion of state reset detectability. This will demonstrate that the addition of our state reset oracle does indeed make our notion of detectability stronger than the basic definition used by \cite{C:BelPatRog14}. When we examine the result from \cite{BSKC2019}, we will see that our state reset oracle also places further restrictions on ASAs wishing to achieve undetectability than their simple state reset oracle, which only resets state to a null value.
+
+
+\subsection{Detecting Ateniese, Magri, and Venturi's ASA using simple state reset} \label{sec:attackasas:amv}
+Ateniese, Magri, and Venturi \cite{CCS:AteMagVen15} describe two different symmetric algorithm substitution attacks on signature schemes. The first is virtually identical to the attack described by \cite{CCS:BelJaeKan15}. The second is an attack on \emph{coin-extractable schemes} (schemes for which the randomness used to generate the signature can be efficiently extracted from the signature itself). It works on any such scheme that makes use of at least a single bit of randomness.
+
+Their attack on coin-extractable schemes works by having the subverted algorithm maintain the state of a stateful pseudorandom generator. Under our definition of state reset (or in fact even the simpler kind, resetting state to null values), their attack becomes detectable: in their ASA, re-use of state of the pseudorandom generator leads to re-use of the signature.
+
+We first define some notation for signature schemes. A signature scheme \textsf{SIG} is composed of three algorithms: \textsf{SIG.KeyGen}, \textsf{SIG.Sign}, and \textsf{SIG.Ver}. \textsf{SIG.KeyGen} randomly selects a secret private key $sk$ and a public verification key $pk$ as a pair from the key space $\mathcal{K}_\mathsf{SIG}$. \textsf{SIG.Sign} is a randomized algorithm with coins $r\in \{0,1\}^\mathsf{SIG.rlen}$. It takes a private key and a message $m\in \mathcal{M}_\mathsf{SIG}$ and produces a signature $s\in \mathcal{S}_\mathsf{SIG}$. \textsf{SIG.Ver} is a deterministic algorithm, taking a public key, a signature, and a message, and returning a boolean value indicating whether the signature passes verification.
+
+Let \textsf{G} be a stateful pseudo-random generator with output length $d=\textsf{SIG.rlen}$, i.e. it has input of some state $t$ and outputs a pseudorandom output $v$ of length $d$ and new state $t'$. Assume for simplicity that $d$ divides $|sk|$. The subversion of \cite{CCS:AteMagVen15} is shown in \autoref{figure:amvsubv}. On each execution of $\mathsf{Sub.Sign}$, this ASA encrypts the next $d$ bits of the signing key, denoted by $sk[\ell + 1, \ell + d]$, using $\mathsf{G}$ as a stream cipher. This encryption is then used in place of the coins for the signature. Since the subverter can get the coins from the signature and knows the embedded key, they can recover the signing key by decrypting the recovered coins. We use the regular detectability game from \autoref{game:gendetect} with \textsf{SIG} as $\mathsf{\Lambda}$ and \textsf{SIG.Sign} as $\mathsf{\Lambda.Alg}_\lambda$ to reason about the detectability of this ASA.
+
+\begin{figure}
+\centering
+\begin{subfigure}[t]{0.3\textwidth}
+\centering
+\myprocedure[linenumbering]{$\mathsf{Sub.Sign}(sk,m,\bar{k},\tau)$}{
+	\pcif \tau = \bot \pcthen \\
+	\pcind \tau \leftarrow (\bar{k}, 0) \\
+	(t, \ell) \leftarrow \tau \\
+	\pcif \ell \ge |sk| \pcthen \\
+	\pcind \ell \leftarrow 0 \\
+	(v, t) \leftarrow \textsf{G}(t) \\
+	\tilde{r} \leftarrow v \oplus sk[\ell + 1, \ell + d] \\
+	\tau \leftarrow (t, \ell + d) \\
+	s \leftarrow \textsf{SIG.Sign}(sk,m;\tilde{r}) \\
+	\pcreturn (s, \tau)
+}
+\caption{ASA on signature schemes, by Ateniese et al. \cite{CCS:AteMagVen15}}
+\label{figure:amvsubv}
+\end{subfigure}
+\unskip\ \vrule\
+\begin{subfigure}[t]{0.35\textwidth}
+\centering
+\myprocedure[linenumbering]{$\textsf{Sub.Sign}(x,m,\bar{k},\tau)$}{
+	\pcif \tau = \bot \pcthen \\
+	\pcind \tau \leftarrow (0, \bot) \\
+	(j, \sigma) \leftarrow \tau \\
+	\pcif j = 0 \bmod 2 \pcthen \\
+	\pcind \kappa \sample \mathbb{Z}_q \\
+	\pcind r\leftarrow \textsf{H}_1(g^\kappa) \\
+	\pcind s\leftarrow\kappa^{-1}(\textsf{H}_2(m)+xr) \bmod q  \\
+	\pcelse \\
+	\pcind \tilde{\kappa} \leftarrow \textsf{H}_3(\bar{k}, \sigma) \\
+	\pcind r\leftarrow \textsf{H}_1(g^{\tilde{\kappa}}) \\
+	\pcind s\leftarrow\tilde{\kappa}^{-1}(\textsf{H}_2(m)+xr) \bmod q  \\
+	\tau \leftarrow (j + 1, r) \\
+	\pcreturn ((s, r), \tau)
+}
+\caption{ASA on DSA, by Baek et al. \cite{BSKC2019}}
+\label{figure:bskcsubv}
+\end{subfigure}
+\unskip\ \vrule\
+\begin{subfigure}[t]{0.25\textwidth}
+\centering
+\vspace*{-4.2mm}
+\myprocedure[linenumbering]{$\textsf{Sub.Encaps}(ek,pk,\tau)$}{
+	\pcif \tau = \bot \pcthen \\
+	\pcind \tau \sample \mathcal{R}_\mathsf{KEM} \\
+	\pcelse \\
+	\pcind t \leftarrow \mathsf{KEM.kgen}(ek, \tau) \\
+	\pcind \tau \leftarrow \textsf{F}(ek, t) \\
+	k \leftarrow \mathsf{KEM.kgen}(pk, \tau) \\
+	c \leftarrow \mathsf{KEM.cgen}(\tau) \\
+	\pcreturn (c, \tau)
+}
+\caption{ASA on KEMs, by Chen et al. \cite{AC:CheHuaYun20}}
+\label{figure:chysubv}
+\end{subfigure}
+\caption{ASAs for analysis in \autoref{sec:statereset}}
+\end{figure}
+
+Detectability under SRDET can be seen as follows: The detector first calls the signing oracle once with some message $m$ and signing key $sk$, and the state is then set to $\tau_1 = (\textsf{G}(\bar{k}), d)$. The detector then calls the reset oracle with $j=0$, and $\tau_2$ is set to $\tau_0 = \bot$. On a second oracle call with the message $m$ and signing key $sk$, $\tau_3$ is set to $(\textsf{G}(\bar{k}), d)$ as before. Let $s_1$ and $s_2$ be the two signatures received. Note that the same $v$ and $\ell$ values were used, and hence the same $\tilde{r}$ value was used, to generate both signatures. Hence the detector will observe that $s_1=s_2$ with certainty, where this would only be the case some small fraction of the time for an unsubverted scheme, yielding large detection advantage.
+
+\subsection{Detecting Baek, Susilo, Kim, and Chow's ASA using sophisticated state reset} \label{sec:attackasas:bskc}
+
+Baek, Susilo, Kim, and Chow \cite{BSKC2019} describe a symmetric ASA against the Digital Signature Algorithm (DSA). Using what they call a small amount of state, they are able to recover the signing key from only 3 subverted signatures. In their paper, they even consider state resets in their formalism of undetectability (and appear to be the first to do so). However, their state resets only set the state back to a null value, and not any previously used state. We show that under our stronger definition allowing resets to any previous state, their subversion is easily detectable despite the small amount of state kept.
+
+We again use the regular detectability game SRDET given in \autoref{game:gendetect}, with \textsf{SIG} as $\mathsf{\Lambda}$ and \textsf{SIG.Sign} as $\mathsf{\Lambda.Alg}_\lambda$, but specify a few more details about the signature scheme \textsf{SIG}, since the ASA from \cite{BSKC2019} is specific to DSA signatures. Let $\textsf{H}_1$ and $\textsf{H}_2$ be cryptographic hash functions. Let $\mathbb{G}$ be a cyclic group of prime order $q$, and let $g$ be a generator of that group. We define $x$ to be the signing key and $y=g^x$ be the verification key. The algorithm \textsf{SIG.Sign} will first sample $\kappa \sample \mathbb{Z}_q$, and then return
+\shortlongeqn[.]{
+(r,s) \leftarrow (\textsf{H}_1(g^\kappa), \kappa^{-1}(\textsf{H}_2(m)+xr) \bmod q)
+}
+
+Let $\mathsf{H}_3$ be a PRF. The ASA from \cite{BSKC2019} is shown in \autoref{figure:bskcsubv}. The key idea here is that the signing algorithm will only subvert one out of every two signatures. The signatures are subverted by controlling the way the per-signature randomness $\kappa$ is generated. A signature is subverted by making the randomness used in a signature dependent on the randomness used in the previous signature, in a way that can be reverse-engineered by the subverter.
+
+Under a state reset where the state is set to initial values, $j$ is reset to 0 and the value of $\sigma$ is cleared. Then the next signature generated is always an unsubverted one. This proper sampling of randomness leads to undetectability in this case, and indeed \cite{BSKC2019} show this. However, if a detector is able to reset state to any previous value, this no longer holds, since all later signatures after the first are deterministically generated based on previous state. Observe the following attack on undetectability. The detector first calls the signing oracle twice with some message $m$ and signing key $x$, and the state is set to $\tau_1 = (1, \textsf{H}_1(g^\kappa))$ on the first call, for some randomly chosen $\kappa$. The detector then calls the reset oracle with $j=1$ so that the next state $\tau_3$ is set to prior state $\tau_1 = (1, \textsf{H}_1(g^\kappa))$. The detector then makes a third signing oracle call with the same message $m$ and signing key $x$. Let $s_2$ and $s_3$ be the $s$-values of the second and third signatures received, respectively. The same value of $\tilde{\kappa}$ was used to generate both these signatures, so the detector will observe that $s_2=s_3$ with certainty, whereas this would be very unlikely in an unsubverted scheme. Therefore after observing only 3 signatures, and using one state reset to a prior state, the detector's detection advantage is extremely close to 1.
+
+
+\subsection{Detecting Chen, Huang, and Yung's ASA using state resets} \label{sec:attackasas:chen}
+
+Chen, Huang, and Yung \cite{AC:CheHuaYun20} describe an asymmetric ASA against a key encapsulation mechanism (KEM) which is stateful and recovers the encapsulated key using only two consecutive encapsulation ciphertexts. Their subversion works on KEMs that can be decomposed into specific sub-functions, most notably requiring that generation of the ciphertext does not require the public encapsulation key, only the coins used to generate the shared secret key. Furthermore, their attack is asymmetric, meaning it is undetectable (under their definition) even if the key embedded into the subversion is known to the detector. The subverter makes use of a corresponding private extraction key in order to exploit the subversion.
+
+A key encapsulation scheme \textsf{KEM} is composed of three algorithms: \textsf{KEM.KeyGen}, \textsf{KEM.Encaps}, and \textsf{KEM.Decaps}. \textsf{KEM.KeyGen} randomly generates a secret decapsulation key $sk$ and a public encapsulation key $pk$. \textsf{KEM.Encaps} is a randomized algorithm with coins $r\in \mathcal{R}_\mathsf{KEM}$. It takes a public key and produces a ciphertext $c\in \mathcal{C}_\mathsf{KEM}$, and a session key $k\in \mathcal{K}_\mathsf{KEM}$. For the ASA from \cite{AC:CheHuaYun20}, we require that it decomposes into three components:
+\begin{enumerate}\itemsep0em
+\item $r\sample \mathcal{R}_\mathsf{KEM}$.
+\item $\mathsf{KEM.kgen}$, which takes as input public key $pk$ and randomness $r$, is used to generate key $k\in \mathcal{K}_\mathsf{KEM}$.
+\item $\mathsf{KEM.cgen}$, which takes only the randomness $r$, outputs ciphertext $c\in \mathcal{C}_\mathsf{KEM}$.
+\end{enumerate}
+Finally, \textsf{KEM.Decaps} is a deterministic algorithm, takes a private key and a ciphertext, and returns a session key $k$ or an error.
+
+Let \textsf{F} be a PRF which takes the embedded key $ek$ and a value in $\mathcal{R}_\mathsf{KEM}$ and returns a value in $\mathcal{R}_\mathsf{KEM}$. The ASA from \cite{AC:CheHuaYun20} is given in \autoref{figure:chysubv}. This ASA can be used to recover the established shared key $k_i$, $i>1$, using the two consecutive ciphertexts $c_{i-1}$ and $c_i$: since $c_i$ was not the first ciphertext sent, it was generated using subverted randomness $\tau_i$. Note that because ciphertext generation does not depend on the public encapsulation key used, the same ciphertext $c_{i-1}$ is generated for $k_{i-1}$ with the legitimate encapsulation key and for $t_{i-1}$ with the subverter's embedded key $ek$. Hence $t_{i-1}$ can be obtained by decapsulating $c_{i-1}$ using $xk$: $t_{i-1} \leftarrow \textsf{KEM.Decaps}(xk, c_{i-1})$. Then $\tau_i \leftarrow \textsf{F}(ek, t_{i-1})$. This allows one to compute $k_i \leftarrow \mathsf{KEM.kgen}(pk, \tau_i)$, the shared key corresponding to the ciphertext $c_i$.
+
+The detection game we use is ASRDET from \autoref{game:gendetect} with \textsf{KEM} as $\mathsf{\Lambda}$ and \textsf{KEM.Encaps} as $\mathsf{\Lambda.Alg}_\lambda$. This subversion is detectable under our definition. Observe the following attack on undetectability. The detector first calls the encapsulation oracle twice with some encapsulation key $pk$, and the state is set to $\tau_1 = \tau$ on the first call, for some randomly chosen $\tau$. The detector then calls the reset oracle with $j=1$, and $\tau_3$ is set to $\tau_3=\tau_1 = \tau$. The detector then makes a third encapsulation oracle call with the encapsulation key $pk$. Let $c_2$ and $c_3$ be the ciphertexts received from the second and third encapsulation oracle calls respectively. Note that the same value of $\tau$ was used to generate both ciphertexts. Hence the detector will observe that $c_2=c_3$ with certainty, whereas this would be very unlikely in an unsubverted scheme. Thus, after observing only 3 ciphertexts, and using one state reset to a prior state, the detector's detection advantage is extremely close to 1.
+
+Note that the detection methods for the ASA from \cite{BSKC2019} and the ASA from \cite{AC:CheHuaYun20} are very similar. Both of these papers purported to have ``small'' state, which should not be considered unreasonable in practical contexts. However, very simple state resets, as could happen even accidentally with virtual machine images, will result in guaranteed or very likely repetition of output, which is catastrophic for detection.
+
+
+\section{Undetectability of Bellare, Paterson, and Rogaway's ASA} \label{sec:bpranalysis}
+
+Contrary to the results we've seen so far in this section, the original ``biased ciphertext attack'' ASA on symmetric encryption by \cite{C:BelPatRog14} is still undetectable in our new framework with state resets (specifically, SRDET). In fact, the majority of the proof provided by \cite{CCS:BelJaeKan15} of the undetectability of their ASA applies directly to the ASA of \cite{C:BelPatRog14}, even in the presence of the state reset oracle.
+
+The subverted encryption algorithm used by \cite{C:BelPatRog14} is equivalent to the one given in \autoref{figure:bprsubversion}, where $\mathsf{F}$ is a PRF which takes a key and a ciphertext of $\mathsf{SE.Enc}$ and returns a single bit, and $s$ is a predetermined parameter of the subversion which bounds the number of loops the ASA will execute before returning a value. This description looks very similar to the ASA given in \cite{CCS:BelJaeKan15}; indeed, we have essentially taken their subversion, and re-included the index-as-state technique that they removed when presenting their improvement over the ASA from \cite{C:BelPatRog14}.
+
+\begin{theorem}\label{theorem:bprdetect}
+Let $\mathcal{U}$ be an adversary in the regular state reset detectability game in \autoref{game:gendetect}, $\mathrm{SRDET}_\mathsf{Sub}(\mathcal{U})$, with symmetric encryption scheme $\mathsf{SE}$ as $\mathsf{\Lambda}$ and $\mathsf{SE.Enc}$ as $\mathsf{\Lambda.Alg}_\lambda$, where $\mathsf{Sub.Enc}$ is the algorithm given in \autoref{figure:bprsubversion}. If $n$ is the number of queries that $\mathcal{U}$ makes to its encryption oracle and $\eta$ is the min-entropy of $\mathsf{SE.Enc}$, then there is an adversary $\mathcal{F}$ in the $\mathrm{PRF}_\mathsf{F}(\mathcal{F})$ game such that
+\shortlongeqn[.]{
+\mathrm{Adv}^{\mathrm{SRDET}}_{\mathsf{Sub}}(\mathcal{U}) \leq 2\mathrm{Adv}^{\mathrm{PRF}}_\mathsf{F}(\mathcal{F}) + n^2s^2\cdot 2^{-\eta-1}
+}
+The running time of $\mathcal{F}$ is about that of $\mathcal{U}$, and $\mathcal{F}$ makes at most $ns$ oracle queries.
+\end{theorem}
+\begin{proof}
+As much of this proof is the same as that given by \cite{CCS:BelJaeKan15}, we will only include some details. We proceed by a sequence of games. Let $H_0$ be the regular state reset detectability game of \autoref{game:gendetect} with the appropriate substitutions mentioned in the theorem statement. Let $H_1$ be the same as $H_0$ but with $\mathsf{F}$ replaced by a lazily-sampled random function of $c$. Let $H_2$ be the same as $H_1$ but with the lazily-sampled random function replaced by fully random sampling of $w$. Let $H_3$ be the regular state reset detectability game where the encryption oracle simply returns $c\sample\textsf{Enc}(k,m)$, and the $\mathsf{Reset}$ oracle has no effect.
+
+The first game change is standard, and proceeds exactly as described by \cite{CCS:BelJaeKan15}, with
+\shortlongeqn[]{
+|\prob{H_1}-\prob{H_0}| =2\text{Adv}^{\text{PRF}}_\mathsf{F}(\mathcal{F})
+}
+for an adversary $\mathcal{F}.$ The second game change also proceeds identically to the description given by \cite{CCS:BelJaeKan15}: in order to replace the lazily sampled random function with true random sampling, we must bound the probability that some value of $c$ is repeated during the game. Call this event $P$. Since the number of loops for each oracle call is bounded by $s$, the probability of $P$ occurring is therefore bounded by $\binom{ns}{2}\cdot 2^{-\eta}\le n^2s^2\cdot 2^{-\eta-1}$, where $n$ is the number of queries to the oracle and $\eta$ is the min-entropy of $\mathsf{SE.Enc}$. Thus we have
+\shortlongeqn[.]{
+|\prob{H_2}-\prob{H_1}| \le n^2s^2\cdot 2^{-\eta-1}
+}
+
+Now we have game $H_2$, shown in \autoref{game:H2}. We argue that $H_2$ is equivalent to $H_3$. In particular, we argue that the implementation of \textsf{Sub.Enc} in the encryption oracle of $H_2$ is identical to \textsf{SE.Enc}. To see this, note that, despite any runs of the Reset oracle, the value of $k[\tau]$ is fixed at the start of an oracle call. Since $w$ is sampled randomly, the decision of which $c$ to return is independent of the state $\tau$, and is in fact the same as simply sampling coins $r$ and returning the resulting ciphertext $c$. This is precisely \textsf{SE.Enc}. Therefore $\prob{H_3} = \prob{H_2}$.
+
+\begin{figure}
+\centering
+\begin{subfigure}[t]{0.3\textwidth}
+\myprocedure[linenumbering]{$\textsf{Sub.Enc}(k,m,\bar{k},\tau)$}{
+	\pcif \tau = \bot \pcthen \tau \leftarrow 0 \\
+	\pcelse \tau \leftarrow \tau + 1 \bmod |k|\\
+	j \leftarrow 0 \\
+	\textbf{do} \\
+	\pcind j \leftarrow j + 1 \\
+	\pcind r \sample \{0,1\}^\mathsf{SE.rlen} \\
+	\pcind c \leftarrow \textsf{Enc}(k, m; r) \\
+	\pcind w \leftarrow \textsf{F}(\bar{k}, c) \\
+	\pcuntil k[\tau] = w \textbf{ or } j = s \\
+	\pcreturn (c, \tau)
+}
+\caption{ASA of \cite{C:BelPatRog14}, where $s$ is a predetermined parameter.}
+\label{figure:bprsubversion}
+\end{subfigure}~~\vrule~~~
+\begin{subfigure}[t]{0.6\textwidth}
+\begin{pchstack}
+\begin{pcvstack}
+\vspace{-2.3mm}
+\myprocedure[linenumbering]{$H_2$}{
+	\bar{k} \sample \textsf{Sub.KeyGen()}\\
+	i \leftarrow 1 \\
+	\tau_0 \leftarrow \bot \\
+	b \sample \{0,1\} \\
+	b' \sample \mathcal{U}^{\mathcal{O}_\textsf{Enc},\textsf{Reset}} \\
+	\pcreturn b=b'
+}
+\pcvspace
+\myprocedure[linenumbering]{\textsf{Reset}($j$), \hfill $0\le j<i$}{
+	\pcif b = 1 \pcthen \\
+	\pcind \tau_{i} \leftarrow \tau_{j} \\
+	\pcind i \leftarrow i + 1
+}
+\end{pcvstack}
+\pchspace
+\myprocedure[linenumbering]{$\mathcal{O}_\textsf{Enc}(k,m)$}{
+	\pcif b=0 \pcthen c \sample \textsf{Enc}(k,m) \\
+	\pcif b=1 \pcthen \\
+	\pcind \pcif \tau = \bot \pcthen \tau = 0 \\
+	\pcind \pcelse \tau \leftarrow \tau + 1 \bmod |k| \\
+	\pcind j \leftarrow 0 \\	
+	\pcind \textbf{do} \\
+	\pcind \pcind j \leftarrow j + 1 \\
+	\pcind \pcind r \sample \{0,1\}^\mathsf{SE.rlen} \\
+	\pcind \pcind c \leftarrow \textsf{SE.Enc}(k, m; r) \\
+	\pcind \pcind w \sample \{0,1\} \\
+	\pcind \pcuntil k[\tau] = w \textbf{ or } j = s\\
+	\pcind \tau_i \leftarrow \tau; i \leftarrow i + 1 \\
+	\pcreturn c
+}
+\end{pchstack}
+\caption{The game $H_2$ for the proof of \autoref{theorem:bprdetect}.}
+\label{game:H2}
+\end{subfigure}
+\caption{ASA on symmetric encryption by Bellare, Paterson, and Rogaway \cite{C:BelPatRog14} and game for proof of its undetectability in \autoref{theorem:bprdetect}.}
+\end{figure}
+ 
+In $H_3$, since the oracle behaviour is independent of $b$, we have that $\prob{H_3}= \frac{1}{2}.$ Putting together all these results, we have
+\iffullversion
+\begin{align*}
+\text{Adv}^\text{SRDET}_\textsf{Sub}(\mathcal{U})
+&= |\prob{H_0}-\frac{1}{2}| \\
+&= |\prob{H_0}-\prob{H_1}+\prob{H_1}-\prob{H_2}+\prob{H_2}-\prob{H_3}+\prob{H_3}-\frac{1}{2}| \\
+&\le |\prob{H_0}-\prob{H_1}|+|\prob{H_1}-\prob{H_2}|+|\prob{H_2}-\prob{H_3}|+|\prob{H_3}-\frac{1}{2}| \\
+&\le 2\text{Adv}^{\mathrm{PRF}}_\mathsf{F}(\mathcal{F}) + n^2s^2\cdot 2^{-\eta-1},
+\end{align*}
+\else
+\[
+\text{Adv}^\text{SRDET}_\textsf{Sub}(\mathcal{U}) \le 2\text{Adv}^{\mathrm{PRF}}_\mathsf{F}(\mathcal{F}) + n^2s^2\cdot 2^{-\eta-1},
+\]
+\fi
+as desired.
+\end{proof}
+
+The number of queries $n$ is polynomially bounded, and $2^{-\eta}$ is negligible for most randomized schemes. The value of $s$ can be set to a small constant without a strong effect on the success of the ASA, and we assume that $2\text{Adv}^{\mathrm{PRF}}_\mathsf{F}(\mathcal{F})$ is small for a good PRF $\mathsf{F}$. Hence we can conclude from \autoref{theorem:bprdetect} that the ASA defined in \autoref{figure:bprsubversion} is undetectable under state resets, even to any prior state.
+
+\section{Discussion}
+
+The reader may find the results in this section to not be technically deep, and indeed they would be correct. We included significant details nonetheless in order to demonstrate precisely the implications of our model. Firstly, the simplicity of the state reset detection attacks in \autoref{sec:attackasas} raise the question of why these attacks were not considered in a formal manner previously in the literature, despite being pointed out as early as \cite{CCS:BelJaeKan15}. Secondly, the similarity of the proof in \autoref{sec:bpranalysis} to the proofs of \cite{CCS:BelJaeKan15} raises the question of why the norm of stateful schemes being considered less desirable was adopted so readily.
+
+Perhaps there is reason not to consider such a strong notion of state reset in certain circumstances. However, the above results do show a couple things conclusively. Firstly, for researchers who avoid or discount stateful schemes, it should be made clear what detection threat model they are working in. Secondly, for researchers who develop stateful schemes, undetectability should be proven in a formal model including some version of state reset, or detection methods in such a framework should be acknowledged. As we have previously mentioned, we believe our notion of state reset is a good choice for analysis, as it formalizes the kind of resets that can occur during virtual machine cloning and rebooting, but weaker models might be justified depending on the threat model.

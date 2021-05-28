@@ -1,0 +1,136 @@
+% T I T L E   P A G E
+% -------------------
+% Last updated October 23, 2020, by Stephen Carr, IST-Client Services
+% The title page is counted as page `i' but we need to suppress the
+% page number. Also, we don't want any headers or footers.
+\pagestyle{empty}
+\pagenumbering{roman}
+
+% The contents of the title page are specified in the "titlepage"
+% environment.
+\begin{titlepage}
+        \begin{center}
+        \vspace*{1.0cm}
+
+        \Huge
+        {\bf Algorithm Substitution Attacks: Detecting ASAs Using State Reset and Making ASAs Asymmetric}
+
+        \vspace*{1.0cm}
+
+        \normalsize
+        by \\
+
+        \vspace*{1.0cm}
+
+        \Large
+        Philip Hodges \\
+
+        \vspace*{3.0cm}
+
+        \normalsize
+        A thesis \\
+        presented to the University of Waterloo \\ 
+        in fulfillment of the \\
+        thesis requirement for the degree of \\
+        Master of Mathematics \\
+        in \\
+        Combinatorics and Optimization \\
+
+        \vspace*{2.0cm}
+
+        Waterloo, Ontario, Canada, 2021 \\
+
+        \vspace*{1.0cm}
+
+        \copyright\ Philip Hodges 2021 \\
+        \end{center}
+\end{titlepage}
+
+% The rest of the front pages should contain no headers and be numbered using Roman numerals starting with `ii'
+\pagestyle{plain}
+\setcounter{page}{2}
+
+\cleardoublepage % Ends the current page and causes all figures and tables that have so far appeared in the input to be printed.
+% In a two-sided printing style, it also makes the next page a right-hand (odd-numbered) page, producing a blank page if necessary.
+
+% D E C L A R A T I O N   P A G E
+% -------------------------------
+  % The following is a sample Delaration Page as provided by the GSO
+  % December 13th, 2006.  It is designed for an electronic thesis.
+ \begin{center}\textbf{Author's Declaration}\end{center}
+  
+ \noindent
+This thesis consists of material all of which I authored or co-authored: see Statement of Contributions included in the thesis. This is a true copy of the thesis, including any required final revisions, as accepted by my examiners.
+  \bigskip
+  
+  \noindent
+I understand that my thesis may be made electronically available to the public.
+
+\cleardoublepage
+
+
+% S T A T E M E N T   O F   C O N T R I B U T I O N S
+% ---------------------------------------------------
+ \begin{center}\textbf{Statement of Contributions}\end{center}
+ 
+ \noindent
+This thesis is based on research contained in the publication TODO in TODO. This publication was written primarily by Philip Hodges under the supervision of Douglas Stebila, who provided invaluable insights and editorial contributions. Both are co-authors of the published paper. Differences between \cite{} and this thesis were authored solely by Philip Hodges, including the abstract, parts of the introduction, parts of the preliminaries, and some additional pedagogical explanations throughout.
+
+
+\cleardoublepage
+
+% A B S T R A C T
+% ---------------
+
+\begin{center}\textbf{Abstract}\end{center}
+
+\input{sections/abstract}
+
+\cleardoublepage
+
+% A C K N O W L E D G E M E N T S
+% -------------------------------
+
+\begin{center}\textbf{Acknowledgements}\end{center}
+
+First and foremost, I would like to thank my supervisor, Dr. Stebila, for his critical role in my development as a researcher. I am eternally grateful for the time spent helping me guide my thoughts and refine my ideas until I could produce work I was truly proud of. Furthermore, the work in this thesis was directly inspired by research of Dr. Stebila's. I could not have asked for a better mentor during my degree.
+
+I would also like to thank both Dr. Stebila and Dr. Menezes for their extensive involvement in my growth as an educator. Both have given me many opportunities to engage with pedagogy in a meaningful way, and shared their many thoughts on the subject with me through innumerable discussions. Most importantly, they both lead by example by always delivering courses created with the utmost care and effort. Thank you for everything you do.
+
+I would like to thank those involved in the generous scholarship programs that have supported me during this degree. This includes everyone involved in the administration and selection committees of the RBC Graduate Scholarship in Cybersecurity and the Queen Elizabeth II Graduate Scholarship in Science and Technology, inside and outside the University of Waterloo. Generous programs such as these make all the difference in the lives of graduate students across Canada.
+
+I would like to thank the entire Department of Combinatorics and Optimization in the Faculty of Mathematics at the University of Waterloo. Every faculty member and member of the administrative staff put a lot of work into the development of graduate students in the department, and the spirit of collegiality this supports cannot be understated.
+\cleardoublepage
+
+% D E D I C A T I O N
+% -------------------
+
+\vspace*{2.5cm}
+
+\begin{center}\textit{Dedicated to Rebecca}\end{center}
+\cleardoublepage
+
+% T A B L E   O F   C O N T E N T S
+% ---------------------------------
+\renewcommand\contentsname{Table of Contents}
+\tableofcontents
+\cleardoublepage
+\phantomsection    % allows hyperref to link to the correct page
+
+% L I S T   O F   F I G U R E S
+% -----------------------------
+\addcontentsline{toc}{chapter}{List of Figures}
+\listoffigures
+\cleardoublepage
+\phantomsection		% allows hyperref to link to the correct page
+
+% L I S T   O F   T A B L E S
+% ---------------------------
+\addcontentsline{toc}{chapter}{List of Tables}
+\listoftables
+\cleardoublepage
+\phantomsection		% allows hyperref to link to the correct page
+
+% Change page numbering back to Arabic numerals
+\pagenumbering{arabic}
+
