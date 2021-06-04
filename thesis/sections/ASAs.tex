@@ -1,0 +1,117 @@
+\chapter{Algorithm Substitution Attacks} \label{sec:ASA}
+
+In this chapter, we will introduce ASAs in detail. In particular, we will detail the common notation that we use to describe ASAs, formalize the undetectability requirement most often considered, and describe some of the history of ASAs that have been published so far.
+
+Let $\mathsf{\Lambda}$ be a cryptographic scheme composed of algorithms $\mathsf{\Lambda.Alg}_1,..., \mathsf{\Lambda.Alg}_u$. An ASA on $\mathsf{\Lambda}$, denoted \textsf{Sub} (for subversion), specifies the following:
+\begin{itemize}
+\item a subversion-key generation function \textsf{Sub.KeyGen},
+\item an index $\lambda$ for the component algorithm of $\mathsf{\Lambda}$ to be subverted, and
+\item a subverted algorithm $\mathsf{Sub.Alg}_\lambda$ to replace the chosen algorithm $\mathsf{\Lambda.Alg}_\lambda$.
+\end{itemize}
+
+The key generation algorithm \textsf{Sub.KeyGen} takes no arguments and returns a pair of keys $ek$ and $xk$ (for embedded key and extraction key). The subverted algorithm $\mathsf{Sub.Alg}_\lambda$ has the same inputs as $\mathsf{\Lambda.Alg}_\lambda$, represented by a tuple $x$, plus an embedded key $ek$, and a state variable $\tau$ (potentially $\bot$, for stateless ASAs); $\mathsf{Sub.Alg}_\lambda$ has the same outputs as $\mathsf{\Lambda.Alg}_\lambda$ plus the updated state variable $\tau'$. For example, if $\mathsf{\Lambda}$ is a symmetric encryption scheme \textsf{SE} and $\mathsf{\Lambda.Alg}_\lambda$ is \textsf{SE.Enc}, then we have $c, \tau' \sample \mathsf{Sub.Enc}(k, m, ek, \tau)$.\footnote{For clarity we make a slight abuse of notation here, writing $\mathsf{Sub.Enc}(k, m, ek, \tau)$ instead of $\mathsf{Sub.Enc}(x, ek, \tau)$ for $x=(k, m)$.}
+
+The idea here is that the algorithm $\mathsf{Sub.Alg}_\lambda$ is chosen by an adversary $\mathcal{A}$ who is trying to subvert the security of scheme $\mathsf{\Lambda}$. A user $\mathcal{U}$ of $\mathsf{\Lambda}$ will unknowingly use $\mathsf{Sub.Alg}_\lambda$, which has the key $ek$ embedded, in place of $\mathsf{\Lambda.Alg}_\lambda$. The adversary $\mathcal{A}$ will observe $\mathcal{U}$'s communication with other users of the scheme $\mathsf{\Lambda}$, and violate the security of $\mathsf{\Lambda}$ by making use of the extraction key $xk$. Depending on the instantiation, $\mathcal{A}$'s specific attack goal can vary, although a common one is recovery of whatever secret key is used by $\mathcal{U}$ for $\mathsf{Sub.Alg}_\lambda$.
+
+Note that we consider here only the subversion of a single algorithm of the scheme $\Lambda$. Other works have considered the case of total subversion (any or all of the algorithms are substituted), mostly in the context of countermeasures \cite{ACNS:AFMV19,CCS:RTYZ17,AC:RTYZ16}.
+
+The two keys used by $\mathcal{A}$ can be the same, $xk=ek$. In this case, we may denote them simply by $\overline{k}$, and we refer to this type of ASA as a symmetric ASA. In other cases, $(xk,ek)$ will be a private key-public key pair, reflecting the fact that embedding the key $ek$ into an $\mathsf{Sub.Alg}_\lambda$ may lead to its recovery by some other party. We call such an ASA an asymmetric ASA. Note that an \emph{asymmetric ASA} can be used to attack a \emph{symmetric-key primitive} $\mathsf{\Lambda}$ (e.g., symmetric encryption), and vice versa. We will discuss the advantages and disadvantages of an asymmetric ASA in \autoref{sec:asymASA}.
+
+The attacker $\mathcal{A}$ wants to complete their attack in a way that is not detectable by $\mathcal{U}$. In order to measure detectability, we allow $\mathcal{U}$ blackbox access to the algorithm $\mathsf{Sub.Alg}_\lambda$ (with the embedded key and state implicitly provided), and calculate how well $\mathcal{U}$ can differentiate $\mathsf{Sub.Alg}_\lambda$ from $\mathsf{\Lambda.Alg}_\lambda$. While we will formalize a new specific notion of undetectability in \autoref{sec:statereset}, it will be useful to specify the undetectability notion that most past works have used. For a cryptographic scheme $\Lambda$ and an ASA $\mathsf{Sub}$, the user $\mathcal{U}$ plays the game in \autoref{game:detect}. This is a distinguishability game, where $\mathcal{U}$ is asked to determine whether the oracle it is using is returning values according to the subverted algorithm $\mathsf{Sub.Alg}_\lambda$ or the original algorithm $\mathsf{\Lambda.Alg}_\lambda$. In a sense, this is the ``base'' notion of undetectability, which can be modified to suit specific needs. Importantly, this is equivalent to the detectability game used by \cite{C:BelPatRog14}. This game is written with $\overline{k}=ek=xk$, so considering only symmetric ASAs for now.
+
+
+\begin{figure}
+\centering
+\begin{pchstack}
+\myprocedure[linenumbering]{DET$_{\mathsf{Sub}}(\mathcal{U})$}{
+	\overline{k} \sample \mathsf{Sub.KeyGen()}\\
+	\tau \leftarrow \bot \\
+	b \sample \{0,1\} \\
+	b' \sample \mathcal{U}^{\mathcal{O}_{\mathsf{Alg}_\lambda}} \\
+	\pcreturn b=b'
+}
+\pchspace
+\myprocedure[linenumbering]{$\mathcal{O}_{\mathsf{Alg}_\lambda}(x)$}{
+	\pcif b=0 \pcthen \\
+	\pcind y \sample \mathsf{\Lambda.Alg}_\lambda(x) \\
+	\pcif b=1 \pcthen \\
+	\pcind (y, \tau) \sample \mathsf{Sub.Alg}_\lambda(x, \overline{k}, \tau) \\
+	\pcreturn y
+}
+\end{pchstack}
+\caption[The basic detectability game]{The basic detectability game.}
+\label{game:detect}
+\end{figure}
+
+For an adversary $\mathcal{U}$ in the detectability game, we define the advantage of $\mathcal{U}$ as
+\[
+\text{Adv}^\mathrm{DET}_\mathsf{Sub}(\mathcal{U})=\left\lvert \prob{\text{DET}_\mathsf{Sub}(\mathcal{U})}-\frac{1}{2} \right\rvert
+\]
+Informally, we say that $\mathsf{Sub}$ is undetectable if the corresponding advantage is small for any efficient adversary $\mathcal{U}$. Otherwise, it is detectable, and an adversary $\mathcal{U}$ with large advantage represents a strategy for detection.
+
+\section{ASAs in prior works}
+
+Many prior works have included successful ASAs on various cryptographic primitives. As we have previously mentioned, the first ASA was included in \cite{C:BelPatRog14}. This is an ASA targeting a symmetric encryption scheme $\mathsf{\Lambda}=\mathsf{SE}$, with $\mathsf{SE.Enc}$ as $\mathsf{\Lambda.Alg}_\lambda$. While their description will differ slightly, their ASA is essentially equivalent to the ASA in \autoref{figure:bprsubv}. In this ASA, $\mathsf{F}$ is a PRF which takes a key and a ciphertext of $\mathsf{SE.Enc}$ and returns a single bit, and $s$ is a predetermined parameter of the subversion which bounds the number of loops the ASA will execute before returning a value.
+
+\begin{figure}
+\centering
+\begin{subfigure}[t]{0.5\textwidth}
+\centering
+\myprocedure[linenumbering]{$\textsf{Sub.Enc}(k,m,\bar{k},\tau)$}{
+	\pcif \tau = \bot \pcthen \tau \leftarrow 0 \\
+	\pcelse \tau \leftarrow \tau + 1 \bmod |k|\\
+	j \leftarrow 0 \\
+	\textbf{do} \\
+	\pcind j \leftarrow j + 1 \\
+	\pcind r \sample \{0,1\}^\mathsf{SE.rlen} \\
+	\pcind c \leftarrow \textsf{SE.Enc}(k, m; r) \\
+	\pcind w \leftarrow \textsf{F}(\bar{k}, c) \\
+	\pcuntil k[\tau] = w \textbf{ or } j = s \\
+	\pcreturn (c, \tau)
+}
+\caption{ASA of \cite{C:BelPatRog14}.}
+\label{figure:bprsubv}
+\end{subfigure}~~\vrule~~~
+\begin{subfigure}[t]{0.5\textwidth}
+\centering
+\myprocedure[linenumbering]{$\textsf{Sub.Enc}(k,m,\bar{k}, \tau)$}{
+	j \leftarrow 0 \\
+	\textbf{do} \\
+	\pcind j \leftarrow j + 1 \\
+	\pcind r \sample \{0,1\}^\mathsf{SE.rlen} \\
+	\pcind c \leftarrow \textsf{SE.Enc}(k, m; r) \\
+	\pcind (w,\sigma) \leftarrow \textsf{F}(\bar{k}, c) \\
+	\pcuntil k[\sigma] = w \textbf{ or } j = s \\
+	\pcreturn (c, \tau)
+}
+\caption{ASA of \cite{CCS:BelJaeKan15}.}
+\label{figure:bjksubv}
+\end{subfigure}
+\caption[ASAs of \cite{C:BelPatRog14} and \cite{CCS:BelJaeKan15}]{ASAs of \cite{C:BelPatRog14} and \cite{CCS:BelJaeKan15}.}
+\label{figure:bprandbjk}
+\end{figure}
+
+This ASA targets recovery of the secret key $k$ being used in the encryption scheme $\mathsf{SE}$. The subverted encryption algorithm encodes information about $k$ into the ciphertexts $c$ it returns. The attacker will observe the ciphertexts, compute $k[\tau]=F(\overline{k}, c)$ for ciphertext $c$, fully reconstructing $k$. However, the ASA is undetectable to $\mathcal{U}$ in the game \autoref{game:detect}, since $\mathcal{U}$ does not know $\overline{k}$, and hence the values $w$ generated appear random, and thus so do the ciphertexts $c$. In \cite{C:BelPatRog14}, the authors give a proof relying on a property of the encryption scheme called ''coin-injectivity'' to prove undetectability. Future works avoid this, relying only on the min-entropy of the scheme instead. A proof of undetectability of this ASA using a stronger undetectability game is given in \autoref{sec:statereset}.
+
+After \cite{C:BelPatRog14}, Degabriele, Farshim, and Poettering \cite{FSE:DegFarPoe15} gave some proposed refinements to their definitions. In particular, they relaxed a requirement that all ciphertexts generated by the subverted encryption algorithm must decrypt correctly for the scheme to be undetectable. Instead, they only required that at most a negligible proportion decrypt incorrectly. They then introduced the notion of an ``input-triggered'' ASA, where a certain input message would lead to leaking of the secret key $k$ without regard for correct decryptability. This requires influence over the distribution of encrypted messages in order to enable key recovery, in contrast to the ASA of \cite{C:BelPatRog14} that could recover keys no matter the message distribution\footnote{Some later works, such as \cite{CCS:BelJaeKan15}, include an arbitrary message distribution $\mathcal{M}$ as part of the requirements for successful key recovery.}. In this thesis, we will follow the convention of \cite{C:BelPatRog14} that the attacker has no control over the distribution of the input to $\mathsf{Sub.Alg}_\lambda$.
+
+Bellare, Jaeger, and Kane \cite{CCS:BelJaeKan15} improved on the results of \cite{C:BelPatRog14}, notably introducing a stateless version of the biased-ciphertext attack. In this attack, instead of keeping an index as state, it is generated pseudorandomly along with the bit $b$, rendering the ASA stateless. Their ASA is shown in \autoref{figure:bjksubv}. This ASA recovers keys and is undetectable for much the same reasons as the ASA of \cite{C:BelPatRog14}, although as mentioned before, \cite{CCS:BelJaeKan15} provided an improved analysis using game-playing proofs that avoided the coin-injectivity assumption. We adopt many of the conventions and techniques that \cite{CCS:BelJaeKan15} used in this work, including the description of the ASA of \cite{C:BelPatRog14} and our later proof of its undetectability in \autoref{sec:statereset}.
+
+One notable change to the detectability game made by \cite{CCS:BelJaeKan15} was the handling of the state $\tau$. In order to avoid potential detection techniques caused by resets of the state, the detectability game was modified to provide $\tau$ directly to $\mathcal{U}$ on invocation of the encryption oracle. This meant that any ASA that made use of state would immediately be detectable, as $\mathcal{U}$ would see that $\tau \neq \bot$. We will discuss this further in \autoref{sec:statereset}.
+
+Aside from symmetric encryption, ASAs on other cryptographic primitives have also been studied. Several authors have published ASAs on signature schemes \cite{CCS:AteMagVen15,BSKC2019,ACISP:LCWW18}. In particular, Ateniese, Magri, and Venturi \cite{CCS:AteMagVen15} provided an ASA very similar to that of \cite{CCS:BelJaeKan15}, as well as a new ASA on ``coin-extractable'' signatures. We will study the latter ASA in \ref{sec:attackasas:amv}. Baek, Susilo, Kim, and Chow \cite{BSKC2019} developed an ASA specifically on DSA signatures, which we will study in \autoref{sec:attackasas:bskc}.
+
+Armour and Poettering explored ASAs on MAC schemes and the decryption side of authenticated encryption \cite{ToSC:ArmPoe19,IMA:ArmPoe19}. These works notably considered subversion of the receiver in a cryptographic scheme instead of the sender, which may be relevant to situations where the sender holds no secret information, such as in public-key encryption and key encapsulation. Chen, Huang, and Yung \cite{AC:CheHuaYun20} presented an ASA against KEMs satisfying certain decomposition properties; we will study this ASA in \autoref{sec:attackasas:chen}. More recently, Berndt et al. studied the implementation of ASAs on the TLS, WireGuard, and Signal protocols \cite{EPRINT:BWPTE20}, rather than directly on the cryptographic primitives themselves.
+
+\section{Countermeasures}
+
+Several solutions have already been proposed for deterring ASAs. Initial works \cite{C:BelPatRog14,FSE:DegFarPoe15,CCS:BelJaeKan15} indicated that deterministic schemes would thwart their ASAs, and showed that the property of unique ciphertexts (there exists only one ciphertext that will decrypt to a given plaintext, a subset of deterministic schemes) was sufficient to render encryption schemes unsubvertible. Still, there are very good reasons to prefer randomized encryption schemes over deterministic ones.
+
+The concept of a reverse firewall was applied to signature schemes by \cite{CCS:AteMagVen15}. In this context, a trusted server would monitor outgoing signatures, and re-randomize them to ensure they had not been subverted. This re-randomizability is a specific property of certain signature schemes.
+
+Several methods for immunizing cryptographic schemes have been explored, notably the ``split-program'' methodology \cite{CCS:RTYZ17,AC:RTYZ16,CCS:TanYun17}, sometimes called cliptography. In these works, the cryptographic scheme is no longer considered a blackbox, and instead is split up into randomness generation and deterministic components. When more than one randomness component is used, and all the components are able to be tested for subversion independently, any ASA can be fully detected. This required that the composition of the component algorithms itself was unsubvertible.
+
+Fischlin and Mazaheri \cite{CSF:FisMaz18} introduced the notion of a self-guarding cryptographic scheme. These schemes have mechanisms to ensure that leakage of information is not possible for a limited time, given that the scheme has been running unsubverted (perhaps offline) for some period of time. They provide several primitives that satisfy this property.
+
+All of these solutions assume some extra trusted component (for example, a trusted firewall system, a period of time where the scheme is not subverted, or an unsubvertable algorithm composition step) and/or a non-blackbox component to the cryptographic scheme in question (in the case of the split-program methodology). Each solution is able to produce significant guarantees on the scheme's resistance to ASAs, but may be difficult to implement in practice.
+
