@@ -35,7 +35,7 @@ Informally, we say that the schemes $\mathsf{PKE}$ and $\mathsf{SE}$ are IND-CPA
 	\pcif b=0 \pcthen \\
 	\pcind c \sample \mathsf{SE.Enc}(k,m) \\
 	\pcif b=1 \pcthen \\
-	\pcind c \sample \mathsf{SE.Enc}(k,\mathbf{0}) \\
+	\pcind c \sample \mathsf{SE.Enc}(k,0^{|m|}) \\
 	\pcreturn c
 }
 \vrule\
@@ -49,7 +49,7 @@ Informally, we say that the schemes $\mathsf{PKE}$ and $\mathsf{SE}$ are IND-CPA
 	\pcif b=0 \pcthen \\
 	\pcind c \sample \mathsf{PKE.Enc}(pk,m) \\
 	\pcif b=1 \pcthen \\
-	\pcind c \sample \mathsf{PKE.Enc}(pk,\mathbf{0}) \\
+	\pcind c \sample \mathsf{PKE.Enc}(pk,0^{|m|}) \\
 	\pcreturn c
 }
 \end{pchstack}
@@ -60,7 +60,7 @@ Informally, we say that the schemes $\mathsf{PKE}$ and $\mathsf{SE}$ are IND-CPA
 
 We use a ``multi-challenge'' IND-CPA game, where $\mathcal{B}$ is not limited to a single challenge ciphertext from which it has to guess. This multi-challenge game has been used, for example, by Rogaway \cite{FSE:Rogaway04}. We choose to use this particular notion, as it more closely resembles our detectability games, leading to proofs that are easier to follow. Security of multi-challenge IND-CPA follows from single-challenge security using a hybrid argument.
 
-We now present our type 2 asymmetric ASA $\mathsf{ASub2}$. Let $\mathsf{SE}$ be a symmetric encryption scheme. Let $\mathsf{PKE}$ be an IND-CPA-secure public-key encryption scheme, and let $\mathsf{F}$ be a PRF with output space $\{1,...,\mathsf{PKE.clen}\}\times \{0,1\}$. Then $\mathsf{ASub2}$, an ASA on $\mathsf{SE}$ is shown in \autoref{figure:asymsubv2}, where $s$ is a parameter of the subversion to bound the loops as before.
+We now present our type 2 asymmetric ASA $\mathsf{ASub2}$. Let $\mathsf{SE}$ be a symmetric encryption scheme. Let $\mathsf{PKE}$ be an IND-CPA-secure public-key encryption scheme, and let $\mathsf{F}$ be a PRF with output space $\{1,...,\mathsf{PKE.clen}\}\times \{0,1\}$. Then $\mathsf{ASub2}$, an ASA on $\mathsf{SE}$, is shown in \autoref{figure:asymsubv2}, where $s$ is a parameter of the subversion to bound the loops as before.
 
 \begin{wrapfigure}{R}{0.4\textwidth}
 \centering
@@ -215,7 +215,7 @@ We prove here that the ASA $\mathsf{ASub2}$ is secure against an adversary $\mat
 	\pcif b=0 \pcthen \\
 	\pcind (c, \tau) \sample \mathsf{ASub2.Enc}(k,m,ek,\tau) \\
 	\pcif b=1 \pcthen \\
-	\pcind (c, \tau) \sample \mathsf{ASub2.Enc}(k,\mathbf{0},ek,\tau) \\
+	\pcind (c, \tau) \sample \mathsf{ASub2.Enc}(k,0^{|m|},ek,\tau) \\
 	\pcreturn c
 }
 \end{pchstack}
@@ -234,11 +234,11 @@ The running time of $\mathcal{B}_1$ and $\mathcal{B}_2$ are both about that of $
 \end{theorem}
 \begin{proof}
 
-We proceed by a sequence of games. Let $J_0$ be the $\mathrm{IND}\text{-}\mathrm{CPA}'_{\mathsf{ASub2.Enc}}(\mathcal{V})$ game. Let $J_1$ be the same as $J_0$ but with $\kappa$ computed as an encryption of $\mathbf{0}$ instead of as an encryption of $k$. Let $J_2$ be the same as $J_1$ but with $c$ computed as an encryption of $\mathbf{0}$ instead of as an encryption of $m$. All of these games are shown in \autoref{game:J012B12}.
+We proceed by a sequence of games. Let $J_0$ be the $\mathrm{IND}\text{-}\mathrm{CPA}'_{\mathsf{ASub2.Enc}}(\mathcal{V})$ game. Let $J_1$ be the same as $J_0$ but with $\kappa$ computed as an encryption of $0^{|k|}$ instead of as an encryption of $k$. Let $J_2$ be the same as $J_1$ but with $c$ computed as an encryption of $0^{|m|}$ instead of as an encryption of $m$. All of these games are shown in \autoref{game:J012B12}.
 
 Let $\mathcal{B}_1$, defined in \autoref{game:J012B12}, be an adversary to the IND-CPA game on $\mathsf{PKE}$. Acting as a challenger, $\mathcal{B}_1$ simulates the IND-CPA game on $\mathsf{ASub2}$ for $\mathcal{V}$, in particular using the $\mathsf{PKE.Enc}$ oracle and public key given to it to simulate $\mathsf{ASub2.Enc}$.
 
-\begin{figure}[t]
+\begin{figure}
 \centering
 \begin{pchstack}
 \begin{pcvstack}
@@ -364,7 +364,7 @@ and hence
 
 Let $\mathcal{B}_2$, defined in \autoref{game:J012B12}, be an adversary to the IND-CPA game on $\mathsf{SE}$. Acting as a challenger, $\mathcal{B}_2$ simulates the game $J_1$ for $\mathcal{V}$, in particular using the $\mathsf{SE.Enc}$ oracle given to it to simulate $\mathsf{ASub2.Enc}_1$.
 
-Game $J_2$ is given in \autoref{game:J012B12}. The only change from $J_1$ is that the oracle will now always use $\mathbf{0}$ in the place of $m$.
+Game $J_2$ is given in \autoref{game:J012B12}. The only change from $J_1$ is that the oracle will now always use $0^{|m|}$ in the place of $m$.
 
 Let $b_\text{se}$ denote the bit from the IND-CPA$_\mathsf{SE}(\mathcal{B}_2)$ game. Note that if $b_{se}=1$, then the $\mathsf{Enc}$ oracle simulated by $\mathcal{B}_2$ proceeds exactly as in game $J_2$, and if $b_{se}=0$, then it proceeds exactly as in game $J_1$. Thus we have
 \shortlongeqn[,]{
@@ -406,24 +406,24 @@ As in \autoref{sec:keyrec1}, we will treat key recovery somewhat less formally t
 
 The following method for key recovery is identical to that of \cite{CCS:BelJaeKan15}, with the extra step of public-key decryption at the end:
 \begin{enumerate}\itemsep0em
-\item Collect ciphertexts $c_1,...,c_n$. Initialize $\kappa$ to a string of length $\mathsf{PKE.clen}$ of null values. 
+\item Collect ciphertexts $c_1,...,c_n$. Initialize $\kappa$ to a string of length $\ell=\mathsf{PKE.clen}$ of null values. 
 \item For each ciphertext $c$, compute $(\sigma, w) = \mathsf{F}(ek, c)$. Set $\kappa[\sigma]=w$.
 \item Compute $k = \mathsf{PKE.Dec}(xk, \kappa)$
 \end{enumerate}
 
-The probability of success here can be calculated by making use of a coupon-collector problem analysis. \footnote{\url{https://en.wikipedia.org/wiki/Coupon_collector\%27s_problem}} Suppose $\mathsf{PKE}$ is $\delta$-correct. The probability that every ciphertext was chosen to successfully leak a bit ($\mathsf{F}(ek, c) = \kappa[\sigma]$) is $(1-2^{-s})^n$. Let $\ell$ be the length of $\kappa$. Then the probability that a given index of $\kappa$ was never selected is $(1-1/\ell)^n$ (assuming $\mathsf{F}$ is random). Hence the probability that at least one of the indices was never selected is at most $\ell (1-1/\ell)^n$, and the probability that the full $\kappa$ can be recovered is at least $(1-2^{-s})^n\cdot (1-\ell (1-1/\ell)^n)$. Considering any decryption failures in $\mathsf{PKE}$, we have that the probability of recovery of the key $k$ is
+The probability of success here can be calculated by making use of a coupon-collector problem analysis.\footnote{\url{https://en.wikipedia.org/wiki/Coupon_collector\%27s_problem}} Suppose $\mathsf{PKE}$ is $\delta$-correct. The probability that every ciphertext was chosen to successfully leak a bit ($\mathsf{F}(ek, c) = \kappa[\sigma]$) is $(1-2^{-s})^n$. Then the probability that a given index of $\kappa$ was never selected is $(1-1/\ell)^n$ (assuming $\mathsf{F}$ is random). Hence the probability that at least one of the indices was never selected is at most $\ell (1-1/\ell)^n$, and the probability that the full $\kappa$ can be recovered is at least $(1-2^{-s})^n\cdot (1-\ell (1-1/\ell)^n)$. Considering any decryption failures in $\mathsf{PKE}$, we have that the probability of recovery of the key $k$ is
 \shortlongeqn[.]{
 P_{kr} = \delta \cdot (1-2^{-s})^n\cdot (1-\ell (1-1/\ell)^n)
 }
 
-This is sufficient for establishing key recovery in a theoretical setting. \cite{CCS:BelJaeKan15} give example values of $s=13$, $\ell=128$, and $n=896$, with key recovery probability close to 1/2. In our setting, we have $\mathsf{PKE.clen}\approx 400$, and hence we require more ciphertexts. With $n=2900,s=13,\delta=1,\ell=400$, we get a key recovery probability above 1/2.
+This is sufficient for establishing key recovery in a theoretical setting. \cite{CCS:BelJaeKan15} give example values of $s=13$, $\ell=128$, and $n=896$, with key recovery probability close to 1/2. As in \autoref{sec:ASA}, we will assume for our analysis that $\mathsf{PKE.clen}\approx 400$, although we could use a PKE scheme with even shorter ciphertexts. With $n=2900,s=13,\delta=1,\ell=400$, we get a key recovery probability above 1/2.
 
 But this analysis does not account for other ways that key recovery could be performed. In fact, it should be clear that even in the presence of erroneous encodings (i.e. some ciphertext $c$ is returned such that $\mathsf{F}(ek, c) \not = \kappa[\sigma]$), the subverter may still be able to recover the correct key if there are enough ciphertexts to encode each index several times. To illustrate this better strategy, consider modifying the above strategy so that in step 2, the subverter takes the most probable value of $w$ for each ciphertext, based on the number of times 0 or 1 was observed. This strategy will tolerate far more errors than our above analysis, while still recovering the key. It may require many ciphertexts to ensure there are large samples to draw from, but simultaneously it enables a smaller $s$ value, since as $n$ grows, the error rate is primarily determined by $s$.
 
 \iffullversion
-We evaluated this strategy with a simulation, assuming that the probability of correctly encoding a key bit in a ciphertext is exactly $1-2^{-s}$. Pseudocode for our simulation is given in \autoref{figure:simulation}. With values $klen=400, n=14000$, and $s=2$, this majority-voting strategy enables key recovery in over 50\% of cases.
+We evaluated this strategy with a simulation, assuming that the probability of correctly encoding a key bit in a ciphertext is exactly $1-2^{-s}$. Pseudocode for our simulation is given in \autoref{figure:simulation}. With parameters $klen=400, n=14000$, $s=2$, and $num=10000$ this majority-voting strategy enables key recovery in over 50\% of cases.
 
-\begin{figure}[t]
+\begin{figure}
 \centering
 \myprocedure[linenumbering]{$\mathsf{Simulation}(klen,n,s,num)$}{
 	\textsf{successes} \leftarrow 0 \\
@@ -452,7 +452,7 @@ We evaluated this strategy with a simulation, assuming that the probability of c
 We evaluated this strategy with a simulation, assuming that the probability of correctly encoding a key bit in a ciphertext is exactly $1-2^{-s}$. In our case, the length of the value to leak, $\kappa$, is around 400, and with $s=2$ and $n=14000$, this majority-voting strategy enables key recovery in over 50\% of cases.
 \fi
 
-This method of key recovery could be even further improved with the observation that the subverter could brute-force a small number of key bits. Given that the incorrectly decoded key bits are more likely to have fewer samples or closer tallies between correct and incorrect encodings, errors may be easy to identify. We will not include this possibility in our analysis.
+This method of key recovery could be even further improved with the observation that the subverter could brute-force a small number of key bits. Given that the incorrectly decoded key bits are more likely to have fewer samples or closer tallies between correct and incorrect encodings, errors may be easy to identify. We do not include this possibility in our analysis.
 
 To further illustrate the tradeoff between $n$ and $s$, we plotted our simulated results on the graph in \autoref{figure:kr_results}. The graph shows the smallest $n$ value (rounded up to the nearest 100) that results in 50\% and 5\% key recovery probability (with $|\kappa|=400$) for each value of $s$. We could use a smaller value of $|\kappa|$ here, since we do not require \textsf{PKE} to be IND\$ for our type 2 asymmetric ASA, but using $|\kappa|=400$ certainly provides an upper bound. The values given by the theoretical key recovery probability above are included in red for comparison; values of $s$ lower than 13 and 11 were not able to provide key recovery probability above 50\% and 5\% respectively for any value of $n$. Of particular interest are lower values of $s$: experimental results show it is possible to use values $s=6$ or smaller, while the theoretical probability would imply that these values of $s$ are unusable.
 
@@ -516,9 +516,9 @@ coordinates{
 
 The main difference between the simulation values and the theoretical approximation comes from the requirement, in the theoretical case, that all attempts to encode key bits in ciphertexts must succeed. With small $s$, $(1-2^{-s})^n$ actually gets smaller as $n$ gets larger and dominates the key recovery estimation, whereas the key recovery probability should increase when more samples are collected. Directly calculating the complicated probability expression of key recovery without this assumption is precisely the difficulty that we are avoiding with the simulation.
 
-Earlier, we noted that one of the advantages of this ASA over the ASA in \autoref{sec:asymASA} was better resilience to timing detection. Recall that the parameter $s$ determines the maximum number of regular encryptions that the subverted encryption algorithm will do to return one ciphertext. Effectively, the runtime of the subverted scheme is up to $s$ times the runtime of the unsubverted scheme. Knowing this, a large $s$ would allow a user to detect the ASA by timing the execution of the algorithm. We have shown that the ASA $\mathsf{ASub2}$ allows key recovery with $s=2$, which is the smallest value we can achieve with this acceptance-rejection framework.
+Earlier, we noted that one of the advantages of this ASA over the ASA in \autoref{sec:asymASA} was better resilience to timing detection. Recall that the parameter $s$ determines the maximum number of regular encryptions that the subverted encryption algorithm will do to return one ciphertext. Effectively, the runtime of the subverted scheme is up to $s$ times the runtime of the unsubverted scheme. Knowing this, a large $s$ could allow a user to detect the ASA by timing the execution of the algorithm. We have shown that the ASA $\mathsf{ASub2}$ allows key recovery with $s=2$, which is the smallest value we can achieve with this acceptance-rejection framework.
 
-While we haven't included timing attacks in our formalism, it is an important area of future work. Even with $s=2$, a timing attack would easily detect $\mathsf{ASub2}$. It is not clear if there is any way to modify these techniques to achieve a general ASA which is resistant to timing attacks. Indeed, a value of $s=1$ would be identical to unsubverted encryption, and there is no obvious way to implement a non-integer value of $s$. Perhaps an ASA based on acceptance-rejection techniques could have an expected value of $s$ lower than 2, and avoid detection by timing in this manner. Of the published ASAs we evaluated in \autoref{sec:statereset}, \cite{BSKC2019} and \cite{AC:CheHuaYun20} avoided timing detection by using an efficient ASA, where the execution time of the subverted algorithm is approximately the same as that of the unsubverted algorithm, but at the cost of making detectable use of state under state reset attacks. This therefore leaves a gap in the literature: are there ASAs which are undetectable under state resets \emph{and} timing attacks, using acceptance-rejection techniques or otherwise?
+While we haven't included timing attacks in our formalism, it is an important area of future work. Even with $s=2$, a timing attack could easily detect $\mathsf{ASub2}$. It is not clear if there is any way to modify these techniques to achieve a general ASA which is resistant to timing attacks. Indeed, a value of $s=1$ would be identical to unsubverted encryption, and there is no obvious way to implement a non-integer value of $s$. Perhaps an ASA based on acceptance-rejection techniques could have an expected value of $s$ lower than 2, and avoid detection by timing in this manner. Of the published ASAs we evaluated in \autoref{sec:statereset}, \cite{BSKC2019} and \cite{AC:CheHuaYun20} avoided timing detection by using an efficient ASA, where the execution time of the subverted algorithm is approximately the same as that of the unsubverted algorithm, but at the cost of making detectable use of state under state reset attacks. This therefore leaves a gap in the literature: are there ASAs which are undetectable under state resets \emph{and} timing attacks, using acceptance-rejection techniques or otherwise?
 
 \subsection{Key recovery in the presence of state resets}
 As for our type 1 ASA from \autoref{sec:asymASA}, regular state resets would reduce key recovery probability of the ASA in this chapter as it is currently written. However, in this case, it is possible to modify the scheme to maintain key recovery in the presence of state resets. Making $\textsf{PKE}$ deterministic effectively removes dependence of the ASA on any state at all, since the value of $\kappa$ can be recomputed without state (keeping state anyway would allow the ASA to do the work of recomputing $\kappa$ only when the state is reset, mitigating some of the inefficiency of this process). If the ASA does not require state, then key recovery works just as well during state resets as without them.

@@ -11,7 +11,7 @@ where the probability is taken over the choice of coins $r$. The min-entropy of 
 
 We will denote game adversaries by script letters (e.g. $\mathcal{A}$). An adversary $\mathcal{A}$ is simply an algorithm. The notation $\mathcal{A}^{\mathcal{O}}$ indicates that the adversary $\mathcal{A}$ has access to the oracle $\mathcal{O}$ for use as a subroutine. The running time of $\mathcal{A}$ is the worst-case execution time of $\mathcal{A}$ including the time it takes to execute any subroutines.
 
-The game-playing framework was introduced by Bellare and Rogaway \cite{EC:BelRog06} as a more structured method for cryptographic proofs, as it easily allows for incremental steps and standardized techniques in proofs. The primary tool is that of a ``game transition'', where we bound the difference between the probabilities that two games return true. We use many game transitions to create a chain of games between two games (representing two security notions of interest), and a total bound between the success probabilities of the two games. We will use several common techniques for game transitions throughout this work, and introduce the details as required.
+The game-playing framework was nicely formalized by Bellare and Rogaway \cite{EC:BelRog06}. The framework enables more structured methods for cryptographic proofs, as it easily allows for incremental steps and standardized techniques. The primary tool is that of a ``game transition'', where we bound the difference between the probabilities that two games return true. We use many game transitions to create a chain of games between two games (representing two security notions of interest), and obtain a total bound between the success probabilities of the two games at the end of the chain. We will use several common techniques for game transitions throughout this work, and introduce the details as required.
 
 
 \section{Cryptographic schemes}
@@ -65,7 +65,7 @@ We will use the equivalence of the above two forms in a variety of contexts. In 
 	\pcind \pcreturn w_x
 }
 \end{pchstack}
-\caption{The PRF security game.}
+\caption[The PRF security game]{The PRF security game for PRF $\mathsf{F}$ and adversary $\mathcal{F}$.}
 \label{game:prfgame}
 \end{figure}
 

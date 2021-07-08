@@ -75,7 +75,7 @@ The running time of $\mathcal{B}$ is about that of $\mathcal{U}$ and $\mathcal{B
 \begin{proof}
 Consider the augmented state reset detectability game of \autoref{game:gendetect}, with all the substitutions in the theorem statement, and $\mathsf{F}$ modeled as the random oracle $\mathsf{H}$ provided to the adversary $\mathcal{U}$. This is shown in \autoref{game:G01234}, as $G_0$. The oracle $\mathsf{H}$ only takes input $c$, since $ek$ is fixed throughout the game.
 
-\begin{figure}[t]
+\begin{figure}
 \centering
 \begin{pchstack}
 \begin{pcvstack}
@@ -235,7 +235,7 @@ Let $\mathcal{B}$, defined in \autoref{game:B}, be an adversary to the IND\$ gam
 }
 \end{pcvstack}
 \end{pchstack}
-\caption[Adversary $\mathcal{B}$ for the proof of \autoref{theorem:detect}]{Adversary $\mathcal{B}$ for the proof of \autoref{theorem:detect}.}
+\caption[Adversary $\mathcal{B}$ for the proof of \autoref{theorem:detect}]{Adversary $\mathcal{B}$ for the proof of \autoref{theorem:detect}. The boxed code highlights the difference between \textsf{Helper} and $\mathsf{ASub.Enc}$.}
 \label{game:B}
 \end{figure}
 
@@ -274,7 +274,8 @@ Putting all these results together, we have
 \text{Adv}^\text{ASRDET}_\mathsf{ASub.Enc}(\mathcal{U})
 &= |\prob{G_0}-\frac{1}{2}| \\
 &= |\prob{G_0}-\prob{G_1}+\prob{G_1}-\prob{G_2}+\prob{G_2}-\prob{G_3}+\prob{G_3}-\frac{1}{2}| \\
-&\le |\prob{G_0}-\prob{G_1}|+|\prob{G_1}-\prob{G_2}|+|\prob{G_2}-\prob{G_3}|+|\prob{G_3}-\frac{1}{2}| \\
+&\le |\prob{G_0}-\prob{G_1}|+|\prob{G_1}-\prob{G_2}|\\
+&\qquad\qquad\qquad +|\prob{G_2}-\prob{G_3}|+|\prob{G_3}-\frac{1}{2}| \\
 &\le 2\text{Adv}^{\text{IND\$}}_\mathsf{PKE}(\mathcal{B}) + ((ns)^2+2nsq-ns)\cdot 2^{-\eta-1} + |\prob{G_4}-\frac{1}{2}|\\
 &= 2\text{Adv}^{\text{IND\$}}_\mathsf{PKE}(\mathcal{B}) + ((ns)^2+2nsq-ns)\cdot 2^{-\eta-1},
 \end{align*}
