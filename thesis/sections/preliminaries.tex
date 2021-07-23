@@ -9,7 +9,7 @@ We will use min-entropy as a measure of the randomness of an algorithm. Define $
 }
 where the probability is taken over the choice of coins $r$. The min-entropy of $\mathsf{A}$ is $\eta_\mathsf{A}$. A null value is denoted $\bot$. If $G$ is a game, then $\prob{G}$ indicates the probability that $G$ returns true. 
 
-We will denote game adversaries by script letters (e.g. $\mathcal{A}$). An adversary $\mathcal{A}$ is simply an algorithm. The notation $\mathcal{A}^{\mathcal{O}}$ indicates that the adversary $\mathcal{A}$ has access to the oracle $\mathcal{O}$ for use as a subroutine. The running time of $\mathcal{A}$ is the worst-case execution time of $\mathcal{A}$ including the time it takes to execute any subroutines.
+We will denote game adversaries by script letters (e.g.\ $\mathcal{A}$). An adversary $\mathcal{A}$ is simply an algorithm. The notation $\mathcal{A}^{\mathcal{O}}$ indicates that the adversary $\mathcal{A}$ has access to the oracle $\mathcal{O}$ for use as a subroutine. The running time of $\mathcal{A}$ is the worst-case execution time of $\mathcal{A}$ including the time it takes to execute any subroutines.
 
 The game-playing framework was nicely formalized by Bellare and Rogaway \cite{EC:BelRog06}. The framework enables more structured methods for cryptographic proofs, as it easily allows for incremental steps and standardized techniques. The primary tool is that of a ``game transition'', where we bound the difference between the probabilities that two games return true. We use many game transitions to create a chain of games between two games (representing two security notions of interest), and obtain a total bound between the success probabilities of the two games at the end of the chain. We will use several common techniques for game transitions throughout this work, and introduce the details as required.
 
@@ -36,7 +36,7 @@ In this work, we will make use of two standard ways of talking about functions w
 \iffullversion
 Note that we can also write the advantage as follows:
 \begin{align*}
-\text{Adv}^\mathrm{PRF}_\mathsf{F}(\mathcal{F})&=\left\lvert \prob{\text{PRF}_\mathsf{F}(\mathcal{F})}-\frac{1}{2} \right\rvert \\
+\left\lvert \prob{\text{PRF}_\mathsf{F}(\mathcal{F})}-\frac{1}{2} \right\rvert
 &=\left\lvert \prob{\mathcal{F}\Rightarrow 1 \text{ and } b=1} + \prob{\mathcal{F}\Rightarrow 0 \text{ and } b=0} -\frac{1}{2} \right\rvert \\
 &=\left\lvert \frac{1}{2}\condprob{\mathcal{F}\Rightarrow 1}{b=1} + \frac{1}{2}\condprob{\mathcal{F}\Rightarrow 0}{b=0} -\frac{1}{2} \right\rvert \\
 &=\left\lvert \frac{1}{2}\condprob{\mathcal{F}\Rightarrow 1}{b=1} + \frac{1}{2} - \frac{1}{2}\condprob{\mathcal{F}\Rightarrow 1}{b=0} -\frac{1}{2} \right\rvert \\

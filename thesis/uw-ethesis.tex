@@ -181,9 +181,9 @@
 \let\subsectionautorefname\sectionautorefname
 \let\subsubsectionautorefname\sectionautorefname
 
-\newtheorem{theorem}{Theorem}
-\newtheorem{lemma}{Lemma}
-\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}[theorem]{Definition}
 
 \newcommand{\getsr}{{\:\leftarrow\hspace*{-3pt}\raisebox{.5pt}{$\scriptscriptstyle\$$}\:}}
 \renewcommand{\sample}{\getsr}
