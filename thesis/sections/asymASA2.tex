@@ -226,7 +226,7 @@ We prove here that the ASA $\mathsf{ASub2}$ is secure against an adversary $\mat
 \end{figure}
 
 \begin{theorem} \label{theorem:security}
-Let $\mathsf{SE}$ be a symmetric encryption scheme, and let $\mathsf{ASub2}$ be the ASA on $\mathsf{SE}$ given by the description in \autoref{figure:asymsubv2}. Let $\mathcal{V}$ be an adversary in the game $\mathrm{IND}\text{-}\mathrm{CPA}'_{\mathsf{ASub2.Enc}}(\mathcal{V})$. Then there is an adversary $\mathcal{B}_1$ against the $\mathrm{IND}$-$\mathrm{CPA}$ security of $\mathsf{PKE}$ and an adversary $\mathcal{B}_2$ against the $\mathrm{IND}$-$\mathrm{CPA}$ security of $\mathsf{SE}$ such that
+Let $\mathsf{SE}$ be a symmetric encryption scheme, and let $\mathsf{ASub2}$ be the ASA on $\mathsf{SE}$ as described in \autoref{figure:asymsubv2}. Let $\mathcal{V}$ be an adversary in the game $\mathrm{IND}\text{-}\mathrm{CPA}'_{\mathsf{ASub2.Enc}}(\mathcal{V})$. Then there is an adversary $\mathcal{B}_1$ against the $\mathrm{IND}$-$\mathrm{CPA}$ security of $\mathsf{PKE}$ and an adversary $\mathcal{B}_2$ against the $\mathrm{IND}$-$\mathrm{CPA}$ security of $\mathsf{SE}$ such that
 \shortlongeqn[.]{
 \mathrm{Adv}^{\mathrm{IND}\text{-}\mathrm{CPA}'}_{\mathsf{ASub2}}(\mathcal{V}) \leq 
 2\mathrm{Adv}^{\mathrm{IND}\text{-}\mathrm{CPA}}_{\mathsf{PKE}}(\mathcal{B}_1)

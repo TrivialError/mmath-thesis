@@ -55,7 +55,7 @@ Many prior works have included successful ASAs on various cryptographic primitiv
 
 \begin{figure}
 \centering
-\begin{subfigure}[t]{0.5\textwidth}
+\begin{subfigure}[t]{0.3\textwidth}
 \centering
 \myprocedure[linenumbering]{$\textsf{Sub.Enc}(k,m,\bar{k},\tau)$}{
 	\pcif \tau = \bot \pcthen \tau \leftarrow 0 \\
@@ -72,7 +72,7 @@ Many prior works have included successful ASAs on various cryptographic primitiv
 \caption{ASA of \cite{C:BelPatRog14}.}
 \label{figure:bprsubv}
 \end{subfigure}~~\vrule~~~
-\begin{subfigure}[t]{0.5\textwidth}
+\begin{subfigure}[t]{0.3\textwidth}
 \centering
 \myprocedure[linenumbering]{$\textsf{Sub.Enc}(k,m,\bar{k}, \tau)$}{
 	j \leftarrow 0 \\
@@ -99,7 +99,7 @@ Bellare, Jaeger, and Kane \cite{CCS:BelJaeKan15} improved on the results of \cit
 
 One notable change to the detectability game made by \cite{CCS:BelJaeKan15} was the handling of the state $\tau$. In order to avoid potential detection techniques caused by resets of the state, the detectability game was modified to provide $\tau$ directly to $\mathcal{U}$ on invocation of the encryption oracle. This meant that any ASA that made use of state would immediately be detectable, as $\mathcal{U}$ would see that $\tau \neq \bot$. We will discuss this further in \autoref{sec:statereset}.
 
-Aside from symmetric encryption, ASAs on other cryptographic primitives have also been studied. Several authors have published ASAs on signature schemes \cite{CCS:AteMagVen15,BSKC2019,ACISP:LCWW18}. In particular, Ateniese, Magri, and Venturi \cite{CCS:AteMagVen15} provided an ASA very similar to that of \cite{CCS:BelJaeKan15}, as well as a new ASA on ``coin-extractable'' signatures. We will study the latter ASA in \autoref{sec:attackasas:amv}. Baek, Susilo, Kim, and Chow \cite{BSKC2019} developed an ASA specifically on DSA signatures, which we will study in \autoref{sec:attackasas:bskc}.
+Besides symmetric encryption, ASAs on other cryptographic primitives have also been studied. Several authors have published ASAs on signature schemes \cite{CCS:AteMagVen15,BSKC2019,ACISP:LCWW18}. In particular, Ateniese, Magri, and Venturi \cite{CCS:AteMagVen15} provided an ASA very similar to that of \cite{CCS:BelJaeKan15}, as well as a new ASA on ``coin-extractable'' signatures. We will study the latter ASA in \autoref{sec:attackasas:amv}. Baek, Susilo, Kim, and Chow \cite{BSKC2019} developed an ASA specifically on DSA signatures, which we will study in \autoref{sec:attackasas:bskc}.
 
 Armour and Poettering explored ASAs on MAC schemes and the decryption side of authenticated encryption \cite{ToSC:ArmPoe19,IMA:ArmPoe19}. These works notably considered subversion of the receiver in a cryptographic scheme instead of the sender, which may be relevant to situations where the sender holds no secret information, such as in public-key encryption and key encapsulation. Chen, Huang, and Yung \cite{AC:CheHuaYun20} presented an ASA against KEMs satisfying certain decomposition properties; we will study this ASA in \autoref{sec:attackasas:chen}. More recently, Berndt et al. studied the implementation of ASAs on the TLS, WireGuard, and Signal protocols \cite{EPRINT:BWPTE20}, rather than ASAs directly on the cryptographic primitives themselves.
 
